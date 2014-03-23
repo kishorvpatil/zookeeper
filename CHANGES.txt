@@ -299,6 +299,8 @@ Release 3.4.6 - 2014-03-10
 Backward compatible changes:
 
 BUGFIXES:
+  ZOOKEEPER-1901. [JDK8] Sort children for comparison in AsyncOps tests
+  (Andrew Purtell via michim) YAHOO BACKPORT FROM 3.4.7
 
   ZOOKEEPER-1900. NullPointerException in truncate (Camille Fournier)
 
