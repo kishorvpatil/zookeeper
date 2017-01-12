@@ -1,11 +1,11 @@
 PRODUCT_NAME = zookeeper_server
 YAHOO_VERSION_SUFFIX=2
-APACHE_VERSION=`grep '^Release' CHANGES.txt | head -1 | awk '{ print $2 }'`
-VERSION=$(APACHE_VERSION)_$(BUILD_NUMBER)
+VERSION=`grep '^Release' CHANGES.txt | head -1 | awk '{ print $2 }'`
+VERSION=$(VERSION)_$(BUILD_NUMBER)
 LONG_DESC = `cat CHANGES.txt`
 SHORT_DESC = zookeeper server
 CUSTODIAN = zookeeper-devel@yahoo-inc.com http://yforge.corp.yahoo.com/ui/view/ZooKeeper
-JAR_NAME=zookeeper-$(APACHE_VERSION).jar
+JAR_NAME=zookeeper-$(VERSION).jar
 
 OWNER = yahoo
 GROUP = wheel

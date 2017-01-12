@@ -5,7 +5,7 @@ shared:
         env.MVN_MAKE_OPTS: --batch-mode
 
     notifications:
-        email: "zookeeper@yahoo-inc.com"
+        email: "zookeeper-devel@yahoo-inc.com"
 
     plugins:
         coverage:

@@ -20,4 +20,4 @@ platforms:: build
 
 build:
 	@echo "Building..."
-	# ant build command...
+	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=3.4.6 clean test tar

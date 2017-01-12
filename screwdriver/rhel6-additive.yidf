@@ -1,4 +1,8 @@
-add yinst package yjava_ant
-add yinst package yinst_create CURRENT
-add yinst package yjava_maven CURRENT
-add yinst package yjava_jdk 1.8.0_25.28 *
+include common.yidf
+add yinst pkg yjava_ant
+add yinst pkg perlbase 3.0.0 3.99999.99999
+add yinst pkg perl 5.14 5.14.99999
+add yinst pkg ports/mtree 3.7.20050808-3_02 *
+add yinst pkg yjava_jdk 1.8.0_25.28 *
+add yinst pkg ports/cppunit       1.12.1-7_02
+add yinst pkg ports/cppunit-devel 1.12.1-7_02
