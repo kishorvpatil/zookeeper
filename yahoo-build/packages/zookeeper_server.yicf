@@ -1,0 +1,65 @@
+PRODUCT_NAME = zookeeper_server
+YAHOO_VERSION_SUFFIX=2
+APACHE_VERSION=`grep '^Release' CHANGES.txt | head -1 | awk '{ print $2 }'`
+VERSION=$(APACHE_VERSION)_$(BUILD_NUMBER)
+LONG_DESC = `cat CHANGES.txt`
+SHORT_DESC = zookeeper server
+CUSTODIAN = zookeeper-devel@yahoo-inc.com http://yforge.corp.yahoo.com/ui/view/ZooKeeper
+JAR_NAME=zookeeper-$(APACHE_VERSION).jar
+
+OWNER = yahoo
+GROUP = wheel
+PERM = 0444
+SRCDIRS = .
+
+PACKAGE_OS_SPECIFIC = no
+YINST bug-product ZooKeeper
+YINST bug-component General
+
+YINST requires pkg yjava_jdk 1.8 *
+YINST requires pkg yjava_log4j 1.2.14 1.2.99999.99999
+YINST requires pkg jports_org_slf4j__slf4j_log4j12 1.6.2_1 1.6.99999.99999
+YINST requires pkg yprocctl 1.53 1.99999.99999
+
+file    - - - lib/jars/$(JAR_NAME) ../apache_release/$(JAR_NAME)
+symlink - - - lib/jars/zookeeper.jar $(JAR_NAME)
+
+
+configfile 644 - - conf/zookeeper/zookeeper.cfg ../generate_zookeeper_conf.pl template overwrite
+configfile 644 - - var/zookeeper/myid ../generate_zookeeper_myid.pl template overwrite
+
+configfile 644 - - conf/zookeeper/log4j.properties ../conf/log4j.properties nomerge overwrite
+configfile 644 - - conf/zookeeper_cleanup/log4j.properties ../conf/log4j_cleanup.properties nomerge overwrite
+
+file 0544 - - bin/cleanup_logs.sh ../cleanup_logs.sh
+dir  0755 - - var/zookeeper
+dir  0755 - - var/run/zookeeper
+dir  0755 - - logs/zookeeper
+
+# install/activate/deactivate script:
+
+file 0544 - - bin/zookeeper_server.sh ../zookeeper_server.sh
+
+YINST set cron_mailto
+
+YINST set tickTime 2000
+YINST set initLimit 20
+YINST set syncLimit 15
+YINST set snapCount 100000
+YINST set clientPort 2181
+
+YINST set quorumPort 2182
+YINST set electionPort 2183
+YINST set JAVA_HOME /home/y/share/yjava_jdk/java
+YINST set kerberos false
+
+YINST set libpath /home/y/lib
+
+crontab MAILTO=$(cron_mailto)
+crontab 0 1 * * * yahoo $ROOT/bin/cleanup_logs.sh zookeeper_server
+
+YINST start 1 $ROOT/bin/zookeeper_server.sh zookeeper_server-$(VERSION) START
+
+YINST stop 1 $ROOT/bin/zookeeper_server.sh zookeeper_server-$(VERSION) STOP
+
+YINST set autostart on

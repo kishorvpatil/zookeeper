@@ -1,0 +1,4 @@
+add yinst package yjava_ant
+add yinst package yinst_create CURRENT
+add yinst package yjava_maven CURRENT
+add yinst package yjava_jdk 1.8.0_25.28 *
