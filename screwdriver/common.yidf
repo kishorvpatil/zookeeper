@@ -6,10 +6,9 @@ add yinst pkg gitzip 0.3.4 *
 add yinst pkg svnzip 1.0.10 *
 add yinst pkg yinst_create
 add yinst pkg intonow_buildtools_clover 3.0.2.1 *
-add yinst pkg stub/ylock_kern 1.970.15
 add yinst pkg yinst_create CURRENT
 add yinst pkg yjava_maven CURRENT
+add yinst pkg auto_increment_version 1.0.24 *
 
 add yinst setting root.autostart=off
-add yinst setting ylock.autostart=off
 add yinst setting ycron.autostart=off

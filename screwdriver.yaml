@@ -11,7 +11,9 @@ shared:
         coverage:
             enabled: false
         test_results:
-            enabled: false
+            type: junit
+            parameters:
+                path: "test_results"
 
 jobs:
   component:

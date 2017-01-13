@@ -10,6 +10,10 @@ src/java/lib/ant-eclipse-*
 src/java/lib/ivy-*
 src/c/Makefile.in
 src/c/aclocal.m4
+
+#Yahoo Specific Parts
+BASE_VERSION
+VERSION
 src/c/autom4te.cache/
 src/c/compile
 src/c/config.guess
@@ -20,3 +24,6 @@ src/c/depcomp
 src/c/install-sh
 src/c/ltmain.sh
 src/c/missing
+src/java/lib/jdiff/zookeeper_*.xml
+src/c/ltmain.sh
+test_results

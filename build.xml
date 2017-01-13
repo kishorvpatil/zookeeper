@@ -1360,6 +1360,8 @@ xmlns:maven="antlib:org.apache.maven.artifact.ant">
           	failonerror="yes">
                 <env key="base_dir" value="${basedir}"/>
                 <env key="CALLER" value="ANT"/>
+                <env key="CPPFLAGS" value="-I/home/y/include"/>
+                <env key="LDFLAGS" value="-L/home/y/lib64"/>
       		<arg value="--prefix=${test.cppunit.dir}"/>
     	</exec>
     </target>

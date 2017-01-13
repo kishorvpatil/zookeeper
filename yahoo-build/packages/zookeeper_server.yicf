@@ -1,11 +1,11 @@
+#All paths are relative to the base git directory ../..
 PRODUCT_NAME = zookeeper_server
-YAHOO_VERSION_SUFFIX=2
-VERSION=`grep '^Release' CHANGES.txt | head -1 | awk '{ print $2 }'`
-VERSION=$(VERSION)_$(BUILD_NUMBER)
+VERSION=`cat VERSION`
+BASE_VERSION=`cat BASE_VERSION`
 LONG_DESC = `cat CHANGES.txt`
 SHORT_DESC = zookeeper server
 CUSTODIAN = zookeeper-devel@yahoo-inc.com http://yforge.corp.yahoo.com/ui/view/ZooKeeper
-JAR_NAME=zookeeper-$(VERSION).jar
+JAR_NAME=zookeeper-$(BASE_VERSION).jar
 
 OWNER = yahoo
 GROUP = wheel
@@ -21,24 +21,24 @@ YINST requires pkg yjava_log4j 1.2.14 1.2.99999.99999
 YINST requires pkg jports_org_slf4j__slf4j_log4j12 1.6.2_1 1.6.99999.99999
 YINST requires pkg yprocctl 1.53 1.99999.99999
 
-file    - - - lib/jars/$(JAR_NAME) ../apache_release/$(JAR_NAME)
-symlink - - - lib/jars/zookeeper.jar $(JAR_NAME)
+file    - - - lib/jars/$(JAR_NAME) ./build/$(JAR_NAME)
+symlink - - - lib/jars/zookeeper.jar ./build/$(JAR_NAME)
 
 
-configfile 644 - - conf/zookeeper/zookeeper.cfg ../generate_zookeeper_conf.pl template overwrite
-configfile 644 - - var/zookeeper/myid ../generate_zookeeper_myid.pl template overwrite
+configfile 644 - - conf/zookeeper/zookeeper.cfg yahoo-build/conf/generate_zookeeper_conf.pl template overwrite
+configfile 644 - - var/zookeeper/myid yahoo-build/conf/generate_zookeeper_myid.pl template overwrite
 
-configfile 644 - - conf/zookeeper/log4j.properties ../conf/log4j.properties nomerge overwrite
-configfile 644 - - conf/zookeeper_cleanup/log4j.properties ../conf/log4j_cleanup.properties nomerge overwrite
+configfile 644 - - conf/zookeeper/log4j.properties yahoo-build/conf/log4j.properties nomerge overwrite
+configfile 644 - - conf/zookeeper_cleanup/log4j.properties yahoo-build/conf/log4j_cleanup.properties nomerge overwrite
 
-file 0544 - - bin/cleanup_logs.sh ../cleanup_logs.sh
+file 0544 - - bin/cleanup_logs.sh yahoo-build/bin/cleanup_logs.sh
 dir  0755 - - var/zookeeper
 dir  0755 - - var/run/zookeeper
 dir  0755 - - logs/zookeeper
 
 # install/activate/deactivate script:
 
-file 0544 - - bin/zookeeper_server.sh ../zookeeper_server.sh
+file 0544 - - bin/zookeeper_server.sh yahoo-build/bin/zookeeper_server.sh
 
 YINST set cron_mailto
 

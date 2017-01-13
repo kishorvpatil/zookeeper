@@ -1,12 +1,12 @@
+#All paths are relative to the base git directory ../..
 PRODUCT_NAME = zookeeper_client
-YAHOO_VERSION_SUFFIX=2
-VERSION=`grep '^Release' CHANGES.txt | head -1 | awk '{ print $2 }'`
-VERSION=$(VERSION)_$(BUILD_NUMBER)
+VERSION=`cat VERSION`
+BASE_VERSION=`cat BASE_VERSION`
 LONG_DESC = `cat CHANGES.txt`
 SHORT_DESC = zookeeper client
 CUSTODIAN = zookeeper-devel@yahoo-inc.com http://yforge.corp.yahoo.com/ui/view/ZooKeeper
-JAR_NAME=zookeeper-$(VERSION).jar
-CLIENT_JAR_NAME=zookeeper_client-$(VERSION).jar
+JAR_NAME=zookeeper-$(BASE_VERSION).jar
+CLIENT_JAR_NAME=zookeeper_client-$(BASE_VERSION).jar
 
 OWNER = yahoo
 GROUP = wheel
@@ -21,10 +21,10 @@ YINST requires pkg yjava_jdk 1.8 *
 YINST requires pkg yjava_log4j 1.2.14 1.2.99999.99999
 YINST requires pkg jports_org_slf4j__slf4j_log4j12 1.6.2_1 1.6.99999.99999
 
-file    - - - lib/jars/$(CLIENT_JAR_NAME) ../apache_release/$(JAR_NAME)
+file    - - - lib/jars/$(CLIENT_JAR_NAME) ./build/$(JAR_NAME)
 symlink - - - lib/jars/zookeeper_client.jar $(CLIENT_JAR_NAME)
-file 0555 - - bin/zkCli.sh ../zkCli.sh
-configfile 644 - - conf/zookeeper_client/log4j.properties ../conf/log4j_client.properties nomerge overwrite
+file 0555 - - bin/zkCli.sh yahoo-build/bin/zkCli.sh
+configfile 644 - - conf/zookeeper_client/log4j.properties yahoo-build/conf/log4j_client.properties nomerge overwrite
 
 YINST set zookeeper_server localhost:2181
 

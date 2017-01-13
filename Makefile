@@ -18,6 +18,20 @@ cleanplatforms::
 
 platforms:: build
 
-build:
+BASE_VERSION: CHANGES.txt
+	grep '^Release' CHANGES.txt | head -1 | awk '{ print $$2 }' > BASE_VERSION
+
+VERSION: BASE_VERSION
+	/home/y/bin/auto_increment_version.pl zookeeper_client `cat BASE_VERSION`".y" > VERSION	
+
+build: VERSION
 	@echo "Building..."
-	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=3.4.6 clean test tar
+	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar
+	mkdir test_results/
+	cp build/test/logs/* test_results/
+
+clean::
+	rm -rf test_results
+	rm -rf build
+	rm -f BASE_VERSION
+	rm -f VERSION
