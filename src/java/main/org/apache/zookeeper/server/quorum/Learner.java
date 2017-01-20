@@ -437,11 +437,13 @@ public class Learner {
                         throw new IOException("Failed to create " +
                                               updating.toString());
                     }
+                    zk.takeSnapshot();
                     self.setCurrentEpoch(newEpoch);
                     if (!updating.delete()) {
                         throw new IOException("Failed to delete " +
                                               updating.toString());
                     }
+                    snapshotTaken = true;
                     writePacket(new QuorumPacket(Leader.ACK, newLeaderZxid, null, null), true);
                     break;
                 }
