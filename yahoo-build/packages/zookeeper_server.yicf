@@ -22,7 +22,7 @@ YINST requires pkg jports_org_slf4j__slf4j_log4j12 1.6.2_1 1.6.99999.99999
 YINST requires pkg yprocctl 1.53 1.99999.99999
 
 file    - - - lib/jars/$(JAR_NAME) ./build/$(JAR_NAME)
-symlink - - - lib/jars/zookeeper.jar ./build/$(JAR_NAME)
+symlink - - - lib/jars/zookeeper.jar ./$(JAR_NAME)
 
 
 configfile 644 - - conf/zookeeper/zookeeper.cfg yahoo-build/conf/generate_zookeeper_conf.pl template overwrite
