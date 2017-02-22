@@ -24,11 +24,13 @@ BASE_VERSION: CHANGES.txt
 VERSION: BASE_VERSION
 	/home/y/bin/auto_increment_version.pl zookeeper_client `cat BASE_VERSION`".y" > VERSION	
 
+copy_test_files:
+	mkdir -p test_results/
+	cp build/test/logs/* test_results/
+
 build: VERSION
 	@echo "Building..."
-	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar
-	mkdir test_results/
-	cp build/test/logs/* test_results/
+	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; fi
 
 clean::
 	rm -rf test_results
