@@ -7,6 +7,10 @@ shared:
     notifications:
         email: "zookeeper-devel@yahoo-inc.com"
 
+    steps:
+        git_tag:
+            description: Git tag after successful release
+            command gmake git_tag
     plugins:
         coverage:
             enabled: false
@@ -17,6 +21,6 @@ shared:
 
 jobs:
   component:
-    order: [environment, install-rpms, init, build, package, publish]
+    order: [environment, install-rpms, init, build, package, publish, git_tag]
   pull-request:
     order: [environment, install-rpms, init, build, package]

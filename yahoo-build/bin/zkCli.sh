@@ -16,14 +16,14 @@ JARPATH=${ROOT}/lib/jars
 # export CLASSPATH=$JARPATH/*
 
 # old-fashioned way to build a classpath
-for file in `ls -1 $JARPATH/*.jar`
-  do
-  CLASSPATH=$file:$CLASSPATH
+for file in zookeeper_client.jar
+do
+  CLASSPATH=${JARPATH}/${file}:${CLASSPATH}
 done
 
-for file in `ls -1 ${ROOT}/share/jports/*.jar 2> /dev/null`
-  do
-  CLASSPATH=$file:$CLASSPATH
+for file in jline__jline.jar org_slf4j__slf4j_api.jar log4j__log4j.jar
+do
+  CLASSPATH=/home/y/share/jports/${file}:${CLASSPATH}
 done
 
 # add the config directory for log4j.properties
