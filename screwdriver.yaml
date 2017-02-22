@@ -10,7 +10,7 @@ shared:
     steps:
         git_tag:
             description: Git tag after successful release
-            command gmake git_tag
+            command: gmake git_tag
     plugins:
         coverage:
             enabled: false
