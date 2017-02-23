@@ -39,6 +39,6 @@ clean::
 	rm -f VERSION
 
 git_tag: VERSION
-	git tag -f -a `cat ${SRC_DIR}/VERSION`
+	git tag -f -a `cat ${SRC_DIR}/VERSION` -m "Adding tag for `cat ${SRC_DIR}/VERSION`"
 	git push origin `cat ${SRC_DIR}/VERSION`
 	@echo "Build Description: `cat ${SRC_DIR}/VERSION`"
