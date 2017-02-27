@@ -2,7 +2,7 @@
 PRODUCT_NAME = zookeeper_server
 VERSION=`cat VERSION`
 BASE_VERSION=`cat BASE_VERSION`
-LONG_DESC = `cat CHANGES.txt`
+LONG_DESC = `awk 'FNR==1 && NR!=1 {print "\n..."}{print}' yahoo-build/packages/README_server_packaging.txt CHANGES.txt`
 SHORT_DESC = zookeeper server
 CUSTODIAN = zookeeper-devel@yahoo-inc.com http://yforge.corp.yahoo.com/ui/view/ZooKeeper
 JAR_NAME=zookeeper-$(BASE_VERSION).jar
