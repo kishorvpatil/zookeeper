@@ -1,12 +1,11 @@
-add yinst pkg base_dev 5.0.2 *
 add yinst pkg yahoo_cfg_dev 3.0.38 *
 add yinst pkg dist_tools
 add yinst pkg srczip 1.6.5 *
 add yinst pkg gitzip 0.3.4 *
 add yinst pkg svnzip 1.0.10 *
 add yinst pkg intonow_buildtools_clover 3.0.2.1 *
-add yinst pkg yinst_create
-add yinst pkg yjava_maven
+add yinst pkg yinst_create 3.241.61 *
+add yinst pkg yjava_maven 3.2.5_105 *
 add yinst pkg auto_increment_version 1.0.24 *
 
 add yinst setting root.autostart=off

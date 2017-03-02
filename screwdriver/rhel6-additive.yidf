@@ -1,5 +1,5 @@
 include common.yidf
-add yinst pkg yjava_ant
+add yinst pkg yjava_ant 1.9.2 *
 add yinst pkg perlbase 3.0.0 3.99999.99999
 add yinst pkg perl 5.14 5.14.99999
 add yinst pkg ports/mtree 3.7.20050808-3_02 *
