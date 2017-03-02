@@ -4,10 +4,9 @@ add yinst pkg dist_tools
 add yinst pkg srczip 1.6.5 *
 add yinst pkg gitzip 0.3.4 *
 add yinst pkg svnzip 1.0.10 *
-add yinst pkg yinst_create
 add yinst pkg intonow_buildtools_clover 3.0.2.1 *
-add yinst pkg yinst_create CURRENT
-add yinst pkg yjava_maven CURRENT
+add yinst pkg yinst_create
+add yinst pkg yjava_maven
 add yinst pkg auto_increment_version 1.0.24 *
 
 add yinst setting root.autostart=off
