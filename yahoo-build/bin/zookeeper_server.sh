@@ -25,7 +25,7 @@ do
   CLASSPATH=${JARPATH}/${file}:${CLASSPATH}
 done
 
-for file in org_slf4j__slf4j_api.jar log4j__log4j.jar
+for file in org_slf4j__slf4j_api.jar log4j__log4j.jar org_slf4j__slf4j_log4j12.jar
 do
   CLASSPATH=/home/y/share/jports/${file}:${CLASSPATH}
 done
