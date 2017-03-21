@@ -12,11 +12,11 @@ PACKAGE_TARGET_DIR = $(AUTO_PUBLISH_DIR)
 # SD thinks you didn't set PACKAGE_CONFIG or whatever, and makes it *.yicf.
 include $(YAHOO_CFG)/Make.rules
 
-screwdriver: build
+screwdriver: build native_c_client 
 
 cleanplatforms::
 
-platforms:: build
+platforms:: build native_c_client
 
 BASE_VERSION: CHANGES.txt
 	grep '^Release' CHANGES.txt | head -1 | awk '{ print $$2 }' > BASE_VERSION
@@ -30,7 +30,7 @@ copy_test_files:
 
 build: VERSION
 	@echo "Building..."
-	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean tar 
+	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi 
 
 clean::
 	rm -rf test_results
@@ -44,17 +44,18 @@ git_tag: VERSION
 	@echo "Build Description: `cat ${SRC_DIR}/VERSION`"
 
 native_c_client:
-#   Make 64-bit version
+#   Build 64-bit version
 	mkdir -p yahoo-build/c-client/x86_64-linux-gcc
 	cd src/c; ./configure
 	make -C src/c clean
 	make -C src/c
 	cp src/c/.libs/libzookeeper_st.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
 	cp src/c/.libs/libzookeeper_mt.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
-
-#   Make 32-bit version
-#	mkdir -p yahoo-build/c-client/lib32
-#	cd src/c; ./configure --build=i686-pc-linux-gnu "CFLAGS=-m32" "CXXFLAGS=-m32" "LDFLAGS=-m32"
-#	make -C src/c clean
-#	make -C src/c
-#	cp src/c/.libs/libzookeeper_st.so* yahoo-build/c-client/lib32/
+#   Client build looks for unversioned shared objects, so make symlinks 
+	cd yahoo-build/c-client/x86_64-linux-gcc; rm libzookeeper_st.so; ln -s libzookeeper_st.so*.*.* libzookeeper_st.so
+	cd yahoo-build/c-client/x86_64-linux-gcc; rm libzookeeper_mt.so; ln -s libzookeeper_mt.so*.*.* libzookeeper_mt.so
+#   Clean build so yinst_create doesn't complain
+	cd src/c; git clean -d -f
+	make -C yahoo-build/c-client all
+#   Copy the packages to root to auto-publish to dist
+	cp yahoo-build/c-client/packages/*.tgz .
