@@ -14,3 +14,10 @@ BASE_VERSION
 VERSION
 src/java/lib/jdiff/zookeeper_*.xml
 test_results
+
+*.la
+*.o
+*.lo
+src/c/load_gen
+src/c/aclocal.m4
+src/c/config.h

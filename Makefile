@@ -44,18 +44,22 @@ git_tag: VERSION
 	@echo "Build Description: `cat ${SRC_DIR}/VERSION`"
 
 native_c_client:
-#   Build 64-bit version
-	mkdir -p yahoo-build/c-client/x86_64-linux-gcc
+#   Build 64-bit version of the libraries
 	cd src/c; ./configure
-	make -C src/c clean
-	make -C src/c
+	make -C src/c clean all
+
+	mkdir -p yahoo-build/c-client/x86_64-linux-gcc
 	cp src/c/.libs/libzookeeper_st.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
 	cp src/c/.libs/libzookeeper_mt.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
-#   Client build looks for unversioned shared objects, so make symlinks 
-	cd yahoo-build/c-client/x86_64-linux-gcc; rm libzookeeper_st.so; ln -s libzookeeper_st.so*.*.* libzookeeper_st.so
-	cd yahoo-build/c-client/x86_64-linux-gcc; rm libzookeeper_mt.so; ln -s libzookeeper_mt.so*.*.* libzookeeper_mt.so
-#   Clean build so yinst_create doesn't complain
-	cd src/c; git clean -d -f
-	make -C yahoo-build/c-client all
-#   Copy the packages to root to auto-publish to dist
+	cp src/c/.libs/cli_mt yahoo-build/c-client/x86_64-linux-gcc/
+	cp src/c/.libs/cli_st yahoo-build/c-client/x86_64-linux-gcc/
+
+	mkdir -p yahoo-build/c-client/include/hashtable
+	cp src/c/src/*.h yahoo-build/c-client/include
+	cp src/c/include/*.h yahoo-build/c-client/include
+	cp src/c/src/hashtable/*.h yahoo-build/c-client/include/hashtable
+	cp src/c/generated/*.h yahoo-build/c-client/include
+	cp src/c/config.h yahoo-build/c-client/include
+
+	make -C yahoo-build/c-client/
 	cp yahoo-build/c-client/packages/*.tgz .

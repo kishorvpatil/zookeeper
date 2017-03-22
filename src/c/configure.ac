@@ -10,6 +10,8 @@ AC_CONFIG_SRCDIR([src/zookeeper.c])
 init_cflags="$CFLAGS"
 init_cxxflags="$CXXFLAGS"
 
+LDFLAGS+="-Wl,-rpath,/home/y/lib64"
+
 # initialize Doxygen support
 DX_HTML_FEATURE(ON)
 DX_CHM_FEATURE(OFF)
