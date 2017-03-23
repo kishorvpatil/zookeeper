@@ -30,7 +30,7 @@ copy_test_files:
 
 build: VERSION
 	@echo "Building..."
-	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi 
+	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
 
 clean::
 	rm -rf test_results
@@ -44,16 +44,18 @@ git_tag: VERSION
 	@echo "Build Description: `cat ${SRC_DIR}/VERSION`"
 
 native_c_client:
-#   Build 64-bit version of the libraries
+#   Build libs and binaries
 	cd src/c; ./configure
 	make -C src/c clean all
 
+#   Copy libs and binaries
 	mkdir -p yahoo-build/c-client/x86_64-linux-gcc
 	cp src/c/.libs/libzookeeper_st.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
 	cp src/c/.libs/libzookeeper_mt.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
 	cp src/c/.libs/cli_mt yahoo-build/c-client/x86_64-linux-gcc/
 	cp src/c/.libs/cli_st yahoo-build/c-client/x86_64-linux-gcc/
 
+#	Copy headers
 	mkdir -p yahoo-build/c-client/include/hashtable
 	cp src/c/src/*.h yahoo-build/c-client/include
 	cp src/c/include/*.h yahoo-build/c-client/include
@@ -61,5 +63,6 @@ native_c_client:
 	cp src/c/generated/*.h yahoo-build/c-client/include
 	cp src/c/config.h yahoo-build/c-client/include
 
+#	Build packages
 	make -C yahoo-build/c-client/
 	cp yahoo-build/c-client/packages/*.tgz .
