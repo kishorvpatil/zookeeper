@@ -1,0 +1,50 @@
+#!/bin/bash
+
+cat <<EOF
+PRODUCT_NAME=zookeeper_c_client
+YAHOO_VERSION_SUFFIX=2
+VERSION=\`cat ../../../VERSION\`
+LONG_DESC=\`cat ../README-Client.txt\`
+SHORT_DESC="zookeeper C client interface"
+CUSTODIAN="zookeeper-devel@yahoo-inc.com http://yforge.corp.yahoo.com/ui/view/ZooKeeper"
+
+OWNER=root
+GROUP=wheel
+PERM=0444
+SRCDIRS = .
+
+YINST bug-product ZooKeeper
+YINST bug-component General
+SRCDIRS = .
+
+EOF
+
+# figure out the library full name (including the version suffix)
+ST_LIB_NAME=`find ../ -name "libzookeeper_st.so*" -type f -exec basename {} \; 2>/dev/null | head -1`
+MT_LIB_NAME=`find ../ -name "libzookeeper_mt.so*" -type f -exec basename {} \; 2>/dev/null | head -1`
+
+# Chop off trailing zeroes
+ST_LIB_SHORT_NAME=`echo $ST_LIB_NAME | sed 's|\([0-9]\)\.0\.0|\1|'`
+MT_LIB_SHORT_NAME=`echo $MT_LIB_NAME | sed 's|\([0-9]\)\.0\.0|\1|'`
+
+# figure out platforms
+if test "x${ST_LIB_NAME}" != "x" && test "x${MT_LIB_NAME}" != "x" ; then
+    # single-threaded async client library
+    echo "binfile - - -      lib/${ST_LIB_NAME} ../\$(PLATFORM)/${ST_LIB_NAME}"
+    echo "binlink - - -      lib/${ST_LIB_SHORT_NAME} ${ST_LIB_NAME}"
+    echo "binlink - - -      lib/libzookeeper_st.so ${ST_LIB_SHORT_NAME}"
+    # this link is for backward compatibility
+    echo "binlink - - -      lib/libzookeeper.so ${ST_LIB_NAME}"
+
+    # multi-threaded sync/async client library
+    echo "binfile - - -      lib/${MT_LIB_NAME} ../\$(PLATFORM)/${MT_LIB_NAME}"
+    echo "binlink - - -      lib/${MT_LIB_SHORT_NAME} ${MT_LIB_NAME}"
+    echo "binlink - - -      lib/libzookeeper_mt.so ${MT_LIB_SHORT_NAME}"
+
+    BUILT_LIB=true
+fi
+
+if test -z $BUILT_LIB; then
+  echo "error: one or more zookeeper library files are missing! Rebuild the source code." >&2
+  exit 1;
+fi

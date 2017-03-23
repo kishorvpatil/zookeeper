@@ -12,11 +12,11 @@ PACKAGE_TARGET_DIR = $(AUTO_PUBLISH_DIR)
 # SD thinks you didn't set PACKAGE_CONFIG or whatever, and makes it *.yicf.
 include $(YAHOO_CFG)/Make.rules
 
-screwdriver: build
+screwdriver: build native_c_client 
 
 cleanplatforms::
 
-platforms:: build
+platforms:: build native_c_client
 
 BASE_VERSION: CHANGES.txt
 	grep '^Release' CHANGES.txt | head -1 | awk '{ print $$2 }' > BASE_VERSION
@@ -42,3 +42,27 @@ git_tag: VERSION
 	git tag -f -a `cat ${SRC_DIR}/VERSION` -m "Adding tag for `cat ${SRC_DIR}/VERSION`"
 	git push origin `cat ${SRC_DIR}/VERSION`
 	@echo "Build Description: `cat ${SRC_DIR}/VERSION`"
+
+native_c_client:
+#   Build libs and binaries
+	cd src/c; ./configure
+	make -C src/c clean all
+
+#   Copy libs and binaries
+	mkdir -p yahoo-build/c-client/x86_64-linux-gcc
+	cp src/c/.libs/libzookeeper_st.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
+	cp src/c/.libs/libzookeeper_mt.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
+	cp src/c/.libs/cli_mt yahoo-build/c-client/x86_64-linux-gcc/
+	cp src/c/.libs/cli_st yahoo-build/c-client/x86_64-linux-gcc/
+
+#	Copy headers
+	mkdir -p yahoo-build/c-client/include/hashtable
+	cp src/c/src/*.h yahoo-build/c-client/include
+	cp src/c/include/*.h yahoo-build/c-client/include
+	cp src/c/src/hashtable/*.h yahoo-build/c-client/include/hashtable
+	cp src/c/generated/*.h yahoo-build/c-client/include
+	cp src/c/config.h yahoo-build/c-client/include
+
+#	Build packages
+	make -C yahoo-build/c-client/
+	cp yahoo-build/c-client/packages/*.tgz .

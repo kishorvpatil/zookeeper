@@ -1,0 +1,24 @@
+PRODUCT_NAME = zookeeper_c_client_dev
+YAHOO_VERSION_SUFFIX=2
+VERSION=`cat ../../../VERSION`
+LONG_DESC=`cat ../README-Client.txt`
+SHORT_DESC = zookeeper C client library - development files
+CUSTODIAN= zookeeper-devel@yahoo-inc.com http://yforge.corp.yahoo.com/ui/view/ZooKeeper
+
+OWNER = root
+GROUP = wheel
+PERM = 0444
+SRCDIRS = .
+
+YINST bug-product ZooKeeper
+YINST bug-component General
+
+YINST requires pkg zookeeper_c_client $(VERSION)
+
+find - - - include/zookeeper/ ../include -name "*.h" -type f
+
+# single-threaded client shell
+binfile 555 - -      bin/zookeeper_cli_st ../$(PLATFORM)/cli_st
+
+# multi-threaded client shell
+binfile 555 - -      bin/zookeeper_cli_mt ../$(PLATFORM)/cli_mt

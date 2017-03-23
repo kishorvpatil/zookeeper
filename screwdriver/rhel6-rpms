@@ -1,0 +1,6 @@
+# rhel6-rpms
+#
+# Comments start with "#" in this file.
+repo enable y-extras
+install cppunit
+install cppunit-devel
