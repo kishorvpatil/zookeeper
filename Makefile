@@ -8,6 +8,8 @@ include $(YAHOO_CFG)/Make.defs
 PACKAGE_CONFIG_FILES = yahoo-build/packages/zookeeper_client.yicf yahoo-build/packages/zookeeper_server.yicf
 PACKAGE_TARGET_DIR = $(AUTO_PUBLISH_DIR)
 
+AUTO_PUBLISH_DIR ?= .
+
 # Rules should be included after vars are set else 
 # SD thinks you didn't set PACKAGE_CONFIG or whatever, and makes it *.yicf.
 include $(YAHOO_CFG)/Make.rules
@@ -65,4 +67,4 @@ native_c_client:
 
 #	Build packages
 	make -C yahoo-build/c-client/
-	cp yahoo-build/c-client/packages/*.tgz .
+	cp yahoo-build/c-client/packages/*.tgz ${AUTO_PUBLISH_DIR}
