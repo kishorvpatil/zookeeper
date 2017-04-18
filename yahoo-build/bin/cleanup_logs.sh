@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -x
 
 if [ "x${ROOT}" == "x" ]; then
     echo "ROOT not set, assuming /home/y"
@@ -16,6 +16,13 @@ if [ x$DAYSTOKEEP = x ]; then
    DAYSTOKEEP=5
 fi
 
+DAYSUNTILCOMPRESS=`yinst env ${PACKAGE_NAME}|grep ${PACKAGE_NAME}__log_compress|cut -f2 -d"="`
+
+if [ x$DAYSUNTILCOMPRESS = x ]; then
+   DAYSUNTILCOMPRESS=2
+fi
+
+
 SNAPSTOKEEP=`yinst env ${PACKAGE_NAME}|grep ${PACKAGE_NAME}__snapshot_retention|cut -f2 -d"="`
 
 if [ x$SNAPSTOKEEP = x ]; then
@@ -28,6 +35,9 @@ TXN_DIR=${ROOT}/var/zookeeper
 
 echo "Removing log and trace files older than $DAYSTOKEEP days..."
 find $LOG_DIR -daystart -type f -ctime +$DAYSTOKEEP -print -exec $CMD {} \;
+
+echo "Compressing log and trace files older than $DAYSUNTILCOMPRESS days..."
+find $LOG_DIR -daystart -type f -ctime +$DAYSUNTILCOMPRESS -not -name '*gz' -print -exec gzip {} \;
 
 echo "Removing snapshots prior to $SNAPSTOKEEP most recent..."
 if [ "x${JAVA_HOME}" == "x" ]; then
