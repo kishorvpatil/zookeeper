@@ -21,6 +21,9 @@ shared:
 
 jobs:
   component:
+    steps:
+      publish:
+        dist-branch: "test"
     order: [environment, install-rpms, init, build, package, publish, git_tag]
   pull-request:
     order: [environment, install-rpms, init, build, package]
