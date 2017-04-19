@@ -56,7 +56,7 @@ YINST set kerberos false
 YINST set libpath /home/y/lib
 
 crontab MAILTO=$(cron_mailto)
-crontab 0 1 * * * yahoo $ROOT/bin/cleanup_logs.sh zookeeper_server
+crontab 0 1 * * * yahoo $ROOT/bin/cleanup_logs.sh zookeeper_server >> $ROOT/logs/zookeeper/cleanup_logs.txt 2>&1
 
 YINST start 1 $ROOT/bin/zookeeper_server.sh zookeeper_server-$(VERSION) START
 
