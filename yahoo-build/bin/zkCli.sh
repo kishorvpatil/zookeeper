@@ -45,10 +45,10 @@ then
 fi
 if [ "x${zookeeper_server}" = "x" ]
 then
-    ZOO_PARAM="$@"
+    ZOO_ADDITIONAL_PARAM=""
 else
-    ZOO_PARAM="-server $zookeeper_server $@"
+    ZOO_ADDITIONAL_PARAM="-server $zookeeper_server"
 fi
 echo "Starting Zookeeper Cli"
 /home/y/share/yjava_jdk/java/bin/java "-Dzookeeper.log.dir=${ZOO_LOG_DIR}" "-Dzookeeper.root.logger=${ZOO_LOG4J_PROP}" \
-					-cp "$CLASSPATH" $CLIENT_JVMFLAGS $JVMFLAGS org.apache.zookeeper.ZooKeeperMain $ZOO_PARAM
+					-cp "$CLASSPATH" $CLIENT_JVMFLAGS $JVMFLAGS org.apache.zookeeper.ZooKeeperMain $ZOO_ADDITIONAL_PARAM "$@"
