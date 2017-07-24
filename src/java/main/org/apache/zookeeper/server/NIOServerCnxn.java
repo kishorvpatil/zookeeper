@@ -62,7 +62,7 @@ public class NIOServerCnxn extends ServerCnxn {
 
     final SocketChannel sock;
 
-    private final SelectionKey sk;
+    protected final SelectionKey sk;
 
     boolean initialized;
 
@@ -74,7 +74,7 @@ public class NIOServerCnxn extends ServerCnxn {
 
     int sessionTimeout;
 
-    private final ZooKeeperServer zkServer;
+    protected final ZooKeeperServer zkServer;
 
     /**
      * The number of requests that have been submitted but not yet responded to.
@@ -144,38 +144,49 @@ public class NIOServerCnxn extends ServerCnxn {
     
     public void sendBuffer(ByteBuffer bb) {
         try {
-            if (bb != ServerCnxnFactory.closeConn) {
-                // We check if write interest here because if it is NOT set,
-                // nothing is queued, so we can try to send the buffer right
-                // away without waking up the selector
-                if ((sk.interestOps() & SelectionKey.OP_WRITE) == 0) {
-                    try {
-                        sock.write(bb);
-                    } catch (IOException e) {
-                        // we are just doing best effort right now
-                    }
-                }
-                // if there is nothing left to send, we are done
-                if (bb.remaining() == 0) {
-                    packetSent();
-                    return;
-                }
-            }
-
-            synchronized(this.factory){
-                sk.selector().wakeup();
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("Add a buffer to outgoingBuffers, sk " + sk
-                            + " is valid: " + sk.isValid());
-                }
-                outgoingBuffers.add(bb);
-                if (sk.isValid()) {
-                    sk.interestOps(sk.interestOps() | SelectionKey.OP_WRITE);
-                }
-            }
-            
+            internalSendBuffer(bb);
         } catch(Exception e) {
             LOG.error("Unexpected Exception: ", e);
+        }
+    }
+
+    /**
+     * This method implements the internals of sendBuffer. We
+     * have separated it from send buffer to be able to catch
+     * exceptions when testing.
+     *
+     * @param bb Buffer to send.
+     */
+    protected void internalSendBuffer(ByteBuffer bb) {
+        if (bb != ServerCnxnFactory.closeConn) {
+            // We check if write interest here because if it is NOT set,
+            // nothing is queued, so we can try to send the buffer right
+            // away without waking up the selector
+            if(sk.isValid() &&
+                    ((sk.interestOps() & SelectionKey.OP_WRITE) == 0)) {
+                try {
+                    sock.write(bb);
+                } catch (IOException e) {
+                    // we are just doing best effort right now
+                }
+            }
+            // if there is nothing left to send, we are done
+            if (bb.remaining() == 0) {
+                packetSent();
+                return;
+            }
+        }
+
+        synchronized(this.factory){
+            sk.selector().wakeup();
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Add a buffer to outgoingBuffers, sk " + sk
+                        + " is valid: " + sk.isValid());
+            }
+            outgoingBuffers.add(bb);
+            if (sk.isValid()) {
+                sk.interestOps(sk.interestOps() | SelectionKey.OP_WRITE);
+            }
         }
     }
 
@@ -412,7 +423,7 @@ public class NIOServerCnxn extends ServerCnxn {
     }
 
     private void readConnectRequest() throws IOException, InterruptedException {
-        if (zkServer == null) {
+        if (!isZKServerRunning()) {
             throw new IOException("ZooKeeperServer not running");
         }
         zkServer.processConnectRequest(this, incomingBuffer);
@@ -575,7 +586,7 @@ public class NIOServerCnxn extends ServerCnxn {
             
         @Override
         public void commandRun() {
-            if (zkServer == null) {
+            if (!isZKServerRunning()) {
                 pw.println(ZK_NOT_SERVING);
             } else {
                 zkServer.dumpConf(pw);
@@ -590,7 +601,7 @@ public class NIOServerCnxn extends ServerCnxn {
         
         @Override
         public void commandRun() {
-            if (zkServer == null) {
+            if (!isZKServerRunning()) {
                 pw.println(ZK_NOT_SERVING);
             }
             else { 
@@ -607,7 +618,7 @@ public class NIOServerCnxn extends ServerCnxn {
         
         @Override
         public void commandRun() {
-            if (zkServer == null) {
+            if (!isZKServerRunning()) {
                 pw.println(ZK_NOT_SERVING);
             } else {
                 synchronized(factory.cnxns){
@@ -627,7 +638,7 @@ public class NIOServerCnxn extends ServerCnxn {
         
         @Override
         public void commandRun() {
-            if (zkServer == null) {
+            if (!isZKServerRunning()) {
                 pw.println(ZK_NOT_SERVING);
             }
             else {
@@ -649,7 +660,7 @@ public class NIOServerCnxn extends ServerCnxn {
         @SuppressWarnings("unchecked")
         @Override
         public void commandRun() {
-            if (zkServer == null) {
+            if (!isZKServerRunning()) {
                 pw.println(ZK_NOT_SERVING);
             }
             else {   
@@ -691,7 +702,7 @@ public class NIOServerCnxn extends ServerCnxn {
         @SuppressWarnings("unchecked")
         @Override
         public void commandRun() {
-            if (zkServer == null) {
+            if (!isZKServerRunning()) {
                 pw.println(ZK_NOT_SERVING);
             } else {
                 // clone should be faster than iteration
@@ -718,7 +729,7 @@ public class NIOServerCnxn extends ServerCnxn {
 
         @Override
         public void commandRun() {
-            if (zkServer == null) {
+            if (!isZKServerRunning()) {
                 pw.println(ZK_NOT_SERVING);
             } else {
                 DataTree dt = zkServer.getZKDatabase().getDataTree();
@@ -742,7 +753,7 @@ public class NIOServerCnxn extends ServerCnxn {
 
         @Override
         public void commandRun() {
-            if(zkServer == null) {
+            if(!isZKServerRunning()) {
                 pw.println(ZK_NOT_SERVING);
                 return;
             }
@@ -804,7 +815,7 @@ public class NIOServerCnxn extends ServerCnxn {
 
         @Override
         public void commandRun() {
-            if (zkServer == null) {
+            if (!isZKServerRunning()) {
                 pw.print("null");
             } else if (zkServer instanceof ReadOnlyZooKeeperServer) {
                 pw.print("ro");
@@ -953,7 +964,7 @@ public class NIOServerCnxn extends ServerCnxn {
         if (len < 0 || len > BinaryInputArchive.maxBuffer) {
             throw new IOException("Len error " + len);
         }
-        if (zkServer == null) {
+        if (!isZKServerRunning()) {
             throw new IOException("ZooKeeperServer not running");
         }
         incomingBuffer = ByteBuffer.allocate(len);
@@ -1179,10 +1190,16 @@ public class NIOServerCnxn extends ServerCnxn {
 
     @Override
     protected ServerStats serverStats() {
-        if (zkServer == null) {
+        if (!isZKServerRunning()) {
             return null;
         }
         return zkServer.serverStats();
     }
 
+    /**
+     * @return true if the server is running, false otherwise.
+     */
+    boolean isZKServerRunning() {
+        return zkServer != null && zkServer.isRunning();
+    }
 }
