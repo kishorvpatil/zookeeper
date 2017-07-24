@@ -56,8 +56,6 @@ generated
 
 # C
 tags
-.cproject
-.project
 obj
 src/c/core.*
 src/c/TEST-*.txt
@@ -81,3 +79,11 @@ test_results
 src/c/load_gen
 src/c/aclocal.m4
 src/c/config.h
+autom4te.cache/
+src/c/compile
+src/c/config.guess
+src/c/config.sub
+src/c/configure
+src/c/depcomp
+src/c/install-sh
+src/c/missing
