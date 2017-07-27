@@ -20,8 +20,8 @@ cleanplatforms::
 
 platforms:: build native_c_client
 
-BASE_VERSION: CHANGES.txt
-	grep '^Release' CHANGES.txt | head -1 | awk '{ print $$2 }' > BASE_VERSION
+BASE_VERSION: RELEASE.txt
+	grep '^Release' RELEASE.txt | head -1 | awk '{ print $$2 }' > BASE_VERSION
 
 VERSION: BASE_VERSION
 	/home/y/bin/auto_increment_version.pl zookeeper_client `cat BASE_VERSION`".y" > VERSION	
@@ -47,7 +47,7 @@ git_tag: VERSION
 
 native_c_client:
 #   Build libs and binaries
-	cd src/c; ./configure
+	export PATH=${PATH}:/usr/share/automake-1.11/ ; autoreconf -if src/c/configure.ac ; cd src/c ; ./configure
 	make -C src/c clean all
 
 #   Copy libs and binaries

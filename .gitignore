@@ -1,9 +1,67 @@
+# Java
+hs_err_pid*
+
+# Git
+*.orij
+*.rej
+
+# SVN
+.svn
+.revision
+
+# Eclipse
+.metadata
 .classpath
 .eclipse/
+.idea/
 .project
 .revision/
 .settings/
+.externalToolBuilders/
+local.properties
+.recommenders
+*.launch
 build/
+target/
+out/
+
+# Intellij
+*.ipr
+*.iws
+*.iml
+
+# NetBeans
+*~.nib
+nbbuild/
+dist/
+nbdist/
+.ndb-gradle/
+.cproject
+.buildpath
+
+# Other
+*~
+logs/
+*.out
+*.log
+*.bak
+*.tmp
+tmp/**
+tmp/**/*
+.DS_Store
+.gradle
+*.patch
+*.swp
+generated
+
+# C
+tags
+obj
+src/c/core.*
+src/c/TEST-*.txt
+src/c/*.la
+src/c/*.lo
+src/c/*.o
 src/c/generated/
 src/java/generated/
 src/java/lib/ant-eclipse-*
@@ -21,3 +79,11 @@ test_results
 src/c/load_gen
 src/c/aclocal.m4
 src/c/config.h
+autom4te.cache/
+src/c/compile
+src/c/config.guess
+src/c/config.sub
+src/c/configure
+src/c/depcomp
+src/c/install-sh
+src/c/missing
