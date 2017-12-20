@@ -1,6 +1,6 @@
 version: 1
 push:
   # Grant Screwdriver Project 200016 access
-  - screwdriver: 200016
+  - screwdriver:200016
   # Grant Screwdriver Project 185123 access
   - screwdriver:185123
