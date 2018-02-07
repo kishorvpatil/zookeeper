@@ -419,8 +419,10 @@ public class LearnerHandler extends ZooKeeperThread {
                     if (peerLastEpoch != lastProcessedEpoch && !leader.zk.getZKDatabase().isInCommittedLog(peerLastZxid)) {
                         //Be sure we do a snap, because if the epochs are not the same we don't know what
                         // could have happened in between and it may take a TRUNC + UPDATES to get them in SYNC
-                        LOG.debug("Will send SNAP to peer sid: {} epochs are too our of sync local 0x{} remote 0x{}",
-                            getSid(), Long.toHexString(lastProcessedEpoch), Long.toHexString(peerLastEpoch));
+			if (LOG.isDebugEnabled()) {
+                          LOG.debug("Will send SNAP to peer sid: {} epochs are too our of sync local 0x{} remote 0x{}",
+                              new Object[] {getSid(), Long.toHexString(lastProcessedEpoch), Long.toHexString(peerLastEpoch)});
+			}
                     } else if ((maxCommittedLog >= peerLastZxid)
                             && (minCommittedLog <= peerLastZxid)) {
                         LOG.debug("Sending proposals to follower");
