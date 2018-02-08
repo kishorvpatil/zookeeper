@@ -167,8 +167,32 @@ public class ZKDatabase {
             }
         } 
         return this.committedLog;
-    }      
-    
+    }
+
+    /**
+     * Check if the zxId is currently in the committed log.
+     * @param zxId the id to look for.
+     * @return true if it is else false.
+     */
+    public synchronized boolean isInCommittedLog(long zxId) {
+        return isInCommittedLog(committedLog, zxId);
+    }
+
+    protected boolean isInCommittedLog(LinkedList<Proposal> committedLog, long zxId) {
+        for (Proposal p: committedLog) {
+            long pZxId = p.packet.getZxid();
+            if (pZxId == zxId) {
+                return true;
+            }
+
+            //They should be in order so end the search early if needed
+            if (pZxId < zxId) {
+                return false;
+            }
+        }
+        return false;
+    }
+
     /**
      * get the last processed zxid from a datatree
      * @return the last processed zxid of a datatree
@@ -492,5 +516,4 @@ public class ZKDatabase {
     public void close() throws IOException {
         this.snapLog.close();
     }
-    
 }
