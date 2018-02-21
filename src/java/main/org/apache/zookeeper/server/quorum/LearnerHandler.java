@@ -381,7 +381,6 @@ public class LearnerHandler extends ZooKeeperThread {
                 leader.waitForEpochAck(this.getSid(), ss);
             }
             peerLastZxid = ss.getLastZxid();
-            long peerLastEpoch = ZxidUtils.getEpochFromZxid(peerLastZxid);
             
             /* the default to send to the follower */
             int packetToSend = Leader.SNAP;
@@ -405,10 +404,8 @@ public class LearnerHandler extends ZooKeeperThread {
                         +" peerLastZxid=0x"+Long.toHexString(peerLastZxid));
 
                 LinkedList<Proposal> proposals = leader.zk.getZKDatabase().getCommittedLog();
-                long lastProcessedZxid = leader.zk.getZKDatabase().getDataTreeLastProcessedZxid();
-                long lastProcessedEpoch = ZxidUtils.getEpochFromZxid(lastProcessedZxid);
 
-                if (peerLastZxid == lastProcessedZxid) {
+                if (peerLastZxid == leader.zk.getZKDatabase().getDataTreeLastProcessedZxid()) {
                     // Follower is already sync with us, send empty diff
                     LOG.info("leader and follower are in sync, zxid=0x{}",
                             Long.toHexString(peerLastZxid));
@@ -416,14 +413,7 @@ public class LearnerHandler extends ZooKeeperThread {
                     zxidToSend = peerLastZxid;
                 } else if (proposals.size() != 0) {
                     LOG.debug("proposal size is {}", proposals.size());
-                    if (peerLastEpoch != lastProcessedEpoch && !leader.zk.getZKDatabase().isInCommittedLog(peerLastZxid)) {
-                        //Be sure we do a snap, because if the epochs are not the same we don't know what
-                        // could have happened in between and it may take a TRUNC + UPDATES to get them in SYNC
-			if (LOG.isDebugEnabled()) {
-                          LOG.debug("Will send SNAP to peer sid: {} epochs are too our of sync local 0x{} remote 0x{}",
-                              new Object[] {getSid(), Long.toHexString(lastProcessedEpoch), Long.toHexString(peerLastEpoch)});
-			}
-                    } else if ((maxCommittedLog >= peerLastZxid)
+                    if ((maxCommittedLog >= peerLastZxid)
                             && (minCommittedLog <= peerLastZxid)) {
                         LOG.debug("Sending proposals to follower");
 
