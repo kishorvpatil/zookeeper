@@ -167,32 +167,8 @@ public class ZKDatabase {
             }
         } 
         return this.committedLog;
-    }
-
-    /**
-     * Check if the zxId is currently in the committed log.
-     * @param zxId the id to look for.
-     * @return true if it is else false.
-     */
-    public synchronized boolean isInCommittedLog(long zxId) {
-        return isInCommittedLog(committedLog, zxId);
-    }
-
-    protected boolean isInCommittedLog(LinkedList<Proposal> committedLog, long zxId) {
-        for (Proposal p: committedLog) {
-            long pZxId = p.packet.getZxid();
-            if (pZxId == zxId) {
-                return true;
-            }
-
-            //They should be in order so end the search early if needed
-            if (pZxId < zxId) {
-                return false;
-            }
-        }
-        return false;
-    }
-
+    }      
+    
     /**
      * get the last processed zxid from a datatree
      * @return the last processed zxid of a datatree
@@ -225,7 +201,12 @@ public class ZKDatabase {
         return sessionsWithTimeouts;
     }
 
-    
+    private final PlayBackListener commitProposalPlaybackListener = new PlayBackListener() {
+        public void onTxnLoaded(TxnHeader hdr, Record txn){
+            addCommittedProposal(hdr, txn);
+        }
+    };
+
     /**
      * load the database from the disk onto memory and also add 
      * the transactions to the committedlog in memory.
@@ -233,22 +214,30 @@ public class ZKDatabase {
      * @throws IOException
      */
     public long loadDataBase() throws IOException {
-        PlayBackListener listener=new PlayBackListener(){
-            public void onTxnLoaded(TxnHeader hdr,Record txn){
-                Request r = new Request(null, 0, hdr.getCxid(),hdr.getType(),
-                        null, null);
-                r.txn = txn;
-                r.hdr = hdr;
-                r.zxid = hdr.getZxid();
-                addCommittedProposal(r);
-            }
-        };
-        
-        long zxid = snapLog.restore(dataTree,sessionsWithTimeouts,listener);
+        long zxid = snapLog.restore(dataTree, sessionsWithTimeouts, commitProposalPlaybackListener);
         initialized = true;
         return zxid;
     }
-    
+
+    /**
+     * Fast forward the database adding transactions from the committed log into memory.
+     * @return the last valid zxid.
+     * @throws IOException
+     */
+    public long fastForwardDataBase() throws IOException {
+        long zxid = snapLog.fastForwardFromEdits(dataTree, sessionsWithTimeouts, commitProposalPlaybackListener);
+        initialized = true;
+        return zxid;
+    }
+
+    private void addCommittedProposal(TxnHeader hdr, Record txn) {
+        Request r = new Request(null, 0, hdr.getCxid(), hdr.getType(), null, null);
+        r.txn = txn;
+        r.hdr = hdr;
+        r.zxid = hdr.getZxid();
+        addCommittedProposal(r);
+    }
+
     /**
      * maintains a list of last <i>committedLog</i>
      *  or so committed requests. This is used for
@@ -516,4 +505,5 @@ public class ZKDatabase {
     public void close() throws IOException {
         this.snapLog.close();
     }
+    
 }
