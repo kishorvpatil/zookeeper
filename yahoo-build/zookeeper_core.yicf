@@ -1,0 +1,37 @@
+#All paths are relative to the base git directory ../..
+PRODUCT_NAME = zookeeper_core
+VERSION=`cat VERSION`
+BASE_VERSION=`cat BASE_VERSION`
+LONG_DESC = `cat README.txt`
+SHORT_DESC = zookeeper_core is simply a corp internal release of apache zookeeper project. Don't use it directly because it doesn't support yinst settings. Use zookeeper_server and zookeeper_client instead.
+CUSTODIAN = zookeeper-devel@oath.com https://zookeeper.apache.org/
+
+OWNER = yahoo
+GROUP = wheel
+PERM = 0444
+SRCDIRS = .
+
+PACKAGE_OS_SPECIFIC = no
+YINST bug-product ZooKeeper
+YINST bug-component General
+
+YINST requires pkg yjava_jdk 1.8 *
+
+file 444 - - lib64/zookeeper/$(BASE_VERSION)/LICENSE.txt build/zookeeper-$(BASE_VERSION)/LICENSE.txt
+file 444 - - lib64/zookeeper/$(BASE_VERSION)/NOTICE.txt  build/zookeeper-$(BASE_VERSION)/NOTICE.txt
+file 444 - - lib64/zookeeper/$(BASE_VERSION)/README.txt  build/zookeeper-$(BASE_VERSION)/README.txt
+
+find 755 - - lib64/zookeeper/$(BASE_VERSION)/bin/      build/zookeeper-$(BASE_VERSION)/bin/ -type f
+find   - - - lib64/zookeeper/$(BASE_VERSION)/lib/      build/zookeeper-$(BASE_VERSION)/lib/ -type f
+find   - - - lib64/zookeeper/$(BASE_VERSION)/contrib/  build/zookeeper-$(BASE_VERSION)/contrib/ -type f
+find   - - - lib64/zookeeper/$(BASE_VERSION)/recipes/  build/zookeeper-$(BASE_VERSION)/recipes/ -type f
+file   - - - lib64/zookeeper/$(BASE_VERSION)/zookeeper-$(BASE_VERSION).jar build/zookeeper-$(BASE_VERSION)/zookeeper-$(BASE_VERSION).jar
+find   - - - lib64/zookeeper/$(BASE_VERSION)/conf/      build/zookeeper-$(BASE_VERSION)/conf/ -type f
+
+symlink - - - lib/jars/zookeeper.jar lib64/zookeeper/$(BASE_VERSION)/zookeeper-$(BASE_VERSION).jar
+
+symlink - - - lib64/zookeeper/current $(BASE_VERSION)
+symlink - - - lib/zookeeper/current ../../lib64/zookeeper/$(BASE_VERSION)
+
+dir 777 - - logs/zookeeper
+dir 775 - - var/zookeeper

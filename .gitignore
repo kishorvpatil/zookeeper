@@ -70,8 +70,11 @@ src/java/lib/ivy-*
 #Yahoo Specific Parts
 BASE_VERSION
 VERSION
+C_CLIENT_VERSION
+GIT_TAG
 src/java/lib/jdiff/zookeeper_*.xml
 test_results
+yahoo-build/*.tgz
 
 *.la
 *.o

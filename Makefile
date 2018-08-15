@@ -5,10 +5,8 @@ SRCTOP = .
 YAHOO_CFG=/home/y/share/yahoo_cfg
 include $(YAHOO_CFG)/Make.defs
 
-PACKAGE_CONFIG_FILES = yahoo-build/packages/zookeeper_client.yicf yahoo-build/packages/zookeeper_server.yicf
-PACKAGE_TARGET_DIR = $(AUTO_PUBLISH_DIR)
-
-AUTO_PUBLISH_DIR ?= .
+PACKAGE_CONFIG_FILES = yahoo-build/zookeeper_core.yicf
+PACKAGE_TARGET_DIR = yahoo-build/
 
 # Rules should be included after vars are set else 
 # SD thinks you didn't set PACKAGE_CONFIG or whatever, and makes it *.yicf.
@@ -18,13 +16,16 @@ screwdriver: build native_c_client
 
 cleanplatforms::
 
+# invoked by build step
 platforms:: build native_c_client
 
 BASE_VERSION: RELEASE.txt
 	grep '^Release' RELEASE.txt | head -1 | awk '{ print $$2 }' > BASE_VERSION
 
 VERSION: BASE_VERSION
-	/home/y/bin/auto_increment_version.pl zookeeper_client `cat BASE_VERSION`".y" > VERSION	
+	/home/y/bin/auto_increment_version.pl zookeeper_core `cat BASE_VERSION`".y" > VERSION	
+	/home/y/bin/auto_increment_version.pl zookeeper_c_client `cat BASE_VERSION`".y" > C_CLIENT_VERSION
+	echo "core."`cat VERSION`"-c.client."`cat C_CLIENT_VERSION` > GIT_TAG
 
 copy_test_files:
 	mkdir -p test_results/
@@ -39,11 +40,20 @@ clean::
 	rm -rf build
 	rm -f BASE_VERSION
 	rm -f VERSION
+	rm -f C_CLIENT_VERSION
+	rm -f GIT_TAG
+
+# push only zookeeper_core package to rhel6 and rhel7
+dist_force_push:
+	for packages in yahoo-build/zookeeper_core-*.tgz; do \
+		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=hadoopqa -batch -nomail -os rhel-6.x $$packages; \
+		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=hadoopqa -batch -nomail -os rhel-7.x $$packages; \
+	done
 
 git_tag: VERSION
-	git tag -f -a `cat ${SRC_DIR}/VERSION` -m "Adding tag for `cat ${SRC_DIR}/VERSION`"
-	git push origin `cat ${SRC_DIR}/VERSION`
-	@echo "Build Description: `cat ${SRC_DIR}/VERSION`"
+	git tag -f -a `cat ${SRC_DIR}/GIT_TAG` -m "Adding tag for `cat ${SRC_DIR}/GIT_TAG`"
+	git push origin `cat ${SRC_DIR}/GIT_TAG`
+	@echo "Build Description: `cat ${SRC_DIR}/GIT_TAG`"
 
 native_c_client:
 #   Build libs and binaries

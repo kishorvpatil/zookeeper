@@ -1,9 +1,9 @@
 PRODUCT_NAME = zookeeper_c_client_dev
 YAHOO_VERSION_SUFFIX=2
-VERSION=`cat ../../../VERSION`
+VERSION=`cat ../../../C_CLIENT_VERSION`
 LONG_DESC=`cat ../README-Client.txt`
 SHORT_DESC = zookeeper C client library - development files
-CUSTODIAN= zookeeper-devel@yahoo-inc.com http://yforge.corp.yahoo.com/ui/view/ZooKeeper
+CUSTODIAN= zookeeper-devel@oath.com https://zookeeper.apache.org/
 
 OWNER = root
 GROUP = wheel
