@@ -46,8 +46,8 @@ clean::
 # push only zookeeper_core package to rhel6 and rhel7
 dist_force_push:
 	for packages in yahoo-build/zookeeper_core-*.tgz; do \
-		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=hadoopqa -batch -nomail -os rhel-6.x $$packages; \
-		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=hadoopqa -batch -nomail -os rhel-7.x $$packages; \
+		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os rhel-6.x $$packages; \
+		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os rhel-7.x $$packages; \
 	done
 
 git_tag: VERSION
