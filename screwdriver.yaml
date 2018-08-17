@@ -5,9 +5,12 @@ shared:
         env.MVN_MAKE_OPTS: --batch-mode
 
     notifications:
-        email: "zookeeper-devel@yahoo-inc.com"
+        email: "zookeeper-devel@oath.com"
 
     steps:
+        dist_force_push:
+            description: Push packages to dist
+            command: gmake dist_force_push
         git_tag:
             description: Git tag after successful release
             command: gmake git_tag
@@ -24,6 +27,7 @@ jobs:
     steps:
       publish:
         dist-branch: "test"
-    order: [environment, install-rpms, init, build, package, publish, git_tag]
+    #publish step only publishes c-client packages; dist_force_push publishes zookeeper_core package to rhel6 and rhel7
+    order: [environment, install-rpms, init, build, package, dist_force_push, publish, git_tag]
   pull-request:
     order: [environment, install-rpms, init, build, package]
