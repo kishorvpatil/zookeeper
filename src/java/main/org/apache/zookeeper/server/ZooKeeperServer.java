@@ -163,6 +163,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
             DataTreeBuilder treeBuilder, ZKDatabase zkDb) {
         serverStats = new ServerStats(this);
         this.txnLogFactory = txnLogFactory;
+        this.txnLogFactory.setServerStats(this.serverStats);
         this.zkDb = zkDb;
         this.tickTime = tickTime;
         this.minSessionTimeout = minSessionTimeout;
@@ -325,10 +326,6 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         hzxid.set(zxid);
     }
 
-    long getTime() {
-        return System.currentTimeMillis();
-    }
-
     private void close(long sessionId) {
         submitRequest(null, sessionId, OpCode.closeSession, 0, null, null);
     }
@@ -469,7 +466,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
         if (zkShutdownHandler != null) {
             zkShutdownHandler.handle(state);
         } else {
-            LOG.error("ZKShutdownHandler is not registered, so ZooKeeper server "
+            LOG.debug("ZKShutdownHandler is not registered, so ZooKeeper server "
                     + "won't take any action on ERROR or SHUTDOWN server state changes");
         }
     }
@@ -601,7 +598,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
                 DataTree.copyStatPersisted(this.stat, stat);
             }
             return new ChangeRecord(zxid, path, stat, childCount,
-                    acl == null ? new ArrayList<ACL>() : new ArrayList(acl));
+                    acl == null ? new ArrayList<ACL>() : new ArrayList<ACL>(acl));
         }
     }
 
@@ -1018,6 +1015,7 @@ public class ZooKeeperServer implements SessionExpirer, ServerStats.Provider {
                 Record rsp = processSasl(incomingBuffer,cnxn);
                 ReplyHeader rh = new ReplyHeader(h.getXid(), 0, KeeperException.Code.OK.intValue());
                 cnxn.sendResponse(rh,rsp, "response"); // not sure about 3rd arg..what is it?
+                return;
             }
             else {
                 Request si = new Request(cnxn, cnxn.getSessionId(), h.getXid(),
