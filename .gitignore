@@ -90,3 +90,5 @@ src/c/depcomp
 src/c/install-sh
 src/c/missing
 src/c/Makefile.in
+src/c/config.h.in
+src/c/ltmain.sh

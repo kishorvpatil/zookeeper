@@ -1164,7 +1164,7 @@ public class Zab1_0Test {
         testLeaderConversation(new LeaderConversation() {
             public void converseWithLeader(InputArchive ia, OutputArchive oa, Leader l)
                     throws IOException, InterruptedException {
-                /* we test a normal run. everything should work out well. */                
+                /* we test a normal run. everything should work out well. */
                 LearnerInfo li = new LearnerInfo(1, 0x10000);
                 byte liBytes[] = new byte[12];
                 ByteBufferOutputStream.record2ByteBuffer(li,
@@ -1180,7 +1180,7 @@ public class Zab1_0Test {
                 Thread.sleep(l.self.getInitLimit()*l.self.getTickTime() + 5000);
                 
                 // The leader didn't get a quorum of acks - make sure that leader's current epoch is not advanced
-                Assert.assertEquals(0, l.self.getCurrentEpoch());           
+                Assert.assertEquals(0, l.self.getCurrentEpoch());
             }
         });
     }
