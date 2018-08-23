@@ -42,6 +42,7 @@ import javax.management.ObjectName;
 
 import junit.framework.TestCase;
 
+import org.apache.zookeeper.common.Time;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.PortAssignment;
 import org.apache.zookeeper.TestableZooKeeper;
@@ -55,6 +56,7 @@ import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ServerCnxnFactoryAccessor;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
+import org.apache.zookeeper.server.persistence.FilePadding;
 import org.apache.zookeeper.server.persistence.FileTxnLog;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.util.OSMXBean;
@@ -97,7 +99,12 @@ public abstract class ClientBase extends ZKTestCase {
     public static class CountdownWatcher implements Watcher {
         // XXX this doesn't need to be volatile! (Should probably be final)
         volatile CountDownLatch clientConnected;
+        // Set to true when connected to a read-only server, or a read-write (quorum) server.
         volatile boolean connected;
+        // Set to true when connected to a quorum server.
+        volatile boolean syncConnected;
+        // Set to true when connected to a quorum server in read-only mode
+        volatile boolean readOnlyConnected;
 
         public CountdownWatcher() {
             reset();
@@ -105,16 +112,28 @@ public abstract class ClientBase extends ZKTestCase {
         synchronized public void reset() {
             clientConnected = new CountDownLatch(1);
             connected = false;
+            syncConnected = false;
+            readOnlyConnected = false;
         }
         synchronized public void process(WatchedEvent event) {
-            if (event.getState() == KeeperState.SyncConnected ||
-                event.getState() == KeeperState.ConnectedReadOnly) {
+            KeeperState state = event.getState();
+            if (state == KeeperState.SyncConnected) {
                 connected = true;
-                notifyAll();
-                clientConnected.countDown();
+                syncConnected = true;
+                readOnlyConnected = false;
+            } else if (state == KeeperState.ConnectedReadOnly) {
+                connected = true;
+                syncConnected = false;
+                readOnlyConnected = true;
             } else {
                 connected = false;
-                notifyAll();
+                syncConnected = false;
+                readOnlyConnected = false;
+            }
+
+            notifyAll();
+            if (connected) {
+                clientConnected.countDown();
             }
         }
         synchronized public boolean isConnected() {
@@ -123,25 +142,51 @@ public abstract class ClientBase extends ZKTestCase {
         synchronized public void waitForConnected(long timeout)
             throws InterruptedException, TimeoutException
         {
-            long expire = System.currentTimeMillis() + timeout;
+            long expire = Time.currentElapsedTime() + timeout;
             long left = timeout;
             while(!connected && left > 0) {
                 wait(left);
-                left = expire - System.currentTimeMillis();
+                left = expire - Time.currentElapsedTime();
             }
             if (!connected) {
                 throw new TimeoutException("Did not connect");
 
             }
         }
-        synchronized public void waitForDisconnected(long timeout)
-            throws InterruptedException, TimeoutException
+        synchronized public void waitForSyncConnected(long timeout)
+                throws InterruptedException, TimeoutException
         {
             long expire = System.currentTimeMillis() + timeout;
             long left = timeout;
-            while(connected && left > 0) {
+            while(!syncConnected && left > 0) {
                 wait(left);
                 left = expire - System.currentTimeMillis();
+            }
+            if (!syncConnected) {
+                throw new TimeoutException("Failed to connect to read-write ZooKeeper server.");
+            }
+        }
+        synchronized public void waitForReadOnlyConnected(long timeout)
+                throws InterruptedException, TimeoutException
+        {
+            long expire = System.currentTimeMillis() + timeout;
+            long left = timeout;
+            while(!readOnlyConnected && left > 0) {
+                wait(left);
+                left = expire - System.currentTimeMillis();
+            }
+            if (!readOnlyConnected) {
+                throw new TimeoutException("Failed to connect in read-only mode to ZooKeeper server.");
+            }
+        }
+        synchronized public void waitForDisconnected(long timeout)
+            throws InterruptedException, TimeoutException
+        {
+            long expire = Time.currentElapsedTime() + timeout;
+            long left = timeout;
+            while(connected && left > 0) {
+                wait(left);
+                left = expire - Time.currentElapsedTime();
             }
             if (connected) {
                 throw new TimeoutException("Did not disconnect");
@@ -230,7 +275,7 @@ public abstract class ClientBase extends ZKTestCase {
     }
 
     public static boolean waitForServerUp(String hp, long timeout) {
-        long start = System.currentTimeMillis();
+        long start = Time.currentElapsedTime();
         while (true) {
             try {
                 // if there are multiple hostports, just take the first one
@@ -245,7 +290,7 @@ public abstract class ClientBase extends ZKTestCase {
                 LOG.info("server " + hp + " not up " + e);
             }
 
-            if (System.currentTimeMillis() > start + timeout) {
+            if (Time.currentElapsedTime() > start + timeout) {
                 break;
             }
             try {
@@ -257,7 +302,7 @@ public abstract class ClientBase extends ZKTestCase {
         return false;
     }
     public static boolean waitForServerDown(String hp, long timeout) {
-        long start = System.currentTimeMillis();
+        long start = Time.currentElapsedTime();
         while (true) {
             try {
                 HostPort hpobj = parseHostPortList(hp).get(0);
@@ -266,7 +311,7 @@ public abstract class ClientBase extends ZKTestCase {
                 return true;
             }
 
-            if (System.currentTimeMillis() > start + timeout) {
+            if (Time.currentElapsedTime() > start + timeout) {
                 break;
             }
             try {
@@ -280,7 +325,7 @@ public abstract class ClientBase extends ZKTestCase {
 
     public static boolean waitForServerState(QuorumPeer qp, int timeout,
             String serverState) {
-        long start = System.currentTimeMillis();
+        long start = Time.currentElapsedTime();
         while (true) {
             try {
                 Thread.sleep(250);
@@ -289,7 +334,7 @@ public abstract class ClientBase extends ZKTestCase {
             }
             if (qp.getServerState().equals(serverState))
                 return true;
-            if (System.currentTimeMillis() > start + timeout) {
+            if (Time.currentElapsedTime() > start + timeout) {
                 return false;
             }
         }
@@ -307,11 +352,15 @@ public abstract class ClientBase extends ZKTestCase {
         }
     }
 
+    public static File createEmptyTestDir() throws IOException {
+        return createTmpDir(BASETEST, false);
+    }
 
     public static File createTmpDir() throws IOException {
-        return createTmpDir(BASETEST);
+        return createTmpDir(BASETEST, true);
     }
-    static File createTmpDir(File parentDir) throws IOException {
+
+    static File createTmpDir(File parentDir, boolean createInitFile) throws IOException {
         File tmpFile = File.createTempFile("test", ".junit", parentDir);
         // don't delete tmpFile - this ensures we don't attempt to create
         // a tmpDir with a duplicate name
@@ -319,8 +368,21 @@ public abstract class ClientBase extends ZKTestCase {
         Assert.assertFalse(tmpDir.exists()); // never true if tmpfile does it's job
         Assert.assertTrue(tmpDir.mkdirs());
 
+        // todo not every tmp directory needs this file
+        if (createInitFile) {
+            createInitializeFile(tmpDir);
+        }
+
         return tmpDir;
     }
+
+    public static void createInitializeFile(File dir) throws IOException {
+        File initFile = new File(dir, "initialize");
+        if (!initFile.exists()) {
+            Assert.assertTrue(initFile.createNewFile());
+        }
+    }
+
     private static int getPort(String hostPort) {
         String[] split = hostPort.split(":");
         String portstr = split[split.length-1];
@@ -406,7 +468,7 @@ public abstract class ClientBase extends ZKTestCase {
         // resulting in test Assert.failure (client timeout on first session).
         // set env and directly in order to handle static init/gc issues
         System.setProperty("zookeeper.preAllocSize", "100");
-        FileTxnLog.setPreallocSize(100 * 1024);
+        FilePadding.setPreallocSize(100 * 1024);
     }
 
     protected void setUpAll() throws Exception {
@@ -434,7 +496,7 @@ public abstract class ClientBase extends ZKTestCase {
 
         setUpAll();
 
-        tmpDir = createTmpDir(BASETEST);
+        tmpDir = createTmpDir(BASETEST, true);
 
         startServer();
 

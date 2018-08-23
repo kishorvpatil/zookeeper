@@ -25,18 +25,19 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.AbstractSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.jute.BinaryInputArchive;
 import org.apache.jute.BinaryOutputArchive;
 import org.apache.jute.Record;
+import org.apache.zookeeper.server.quorum.ProposalStats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.zookeeper.Environment;
@@ -89,31 +90,17 @@ public class NettyServerCnxn extends ServerCnxn {
             LOG.debug("close called for sessionid:0x"
                     + Long.toHexString(sessionId));
         }
-        synchronized(factory.cnxns){
-            // if this is not in cnxns then it's already closed
-            if (!factory.cnxns.remove(this)) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("cnxns size:" + factory.cnxns.size());
-                }
-                return;
-            }
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("close in progress for sessionid:0x"
-                        + Long.toHexString(sessionId));
-            }
 
-            synchronized (factory.ipMap) {
-                Set<NettyServerCnxn> s =
-                    factory.ipMap.get(((InetSocketAddress)channel
-                            .getRemoteAddress()).getAddress());
-                s.remove(this);
-            }
-        }
+        // ZOOKEEPER-2743:
+        // Always unregister connection upon close to prevent
+        // connection bean leak under certain race conditions.
+        factory.unregisterConnection(this);
+
+        factory.removeCnxn(this);
 
         if (channel.isOpen()) {
             channel.close();
         }
-        factory.unregisterConnection(this);
     }
 
     @Override
@@ -199,6 +186,7 @@ public class NettyServerCnxn extends ServerCnxn {
     @Override
     public void setSessionId(long sessionId) {
         this.sessionId = sessionId;
+        factory.addSession(sessionId, this);
     }
 
     @Override
@@ -220,6 +208,15 @@ public class NettyServerCnxn extends ServerCnxn {
         }
         channel.write(wrappedBuffer(sendBuffer));
         packetSent();
+    }
+
+    @Override
+    public InetAddress getSocketAddress() {
+        if (channel == null) {
+            return null;
+        }
+
+        return ((InetSocketAddress)(channel.getRemoteAddress())).getAddress();
     }
 
     /**
@@ -400,8 +397,12 @@ public class NettyServerCnxn extends ServerCnxn {
             if (!isZKServerRunning()) {
                 pw.println(ZK_NOT_SERVING);
             }
-            else { 
-                zkServer.serverStats().reset();
+            else {
+                ServerStats serverStats = zkServer.serverStats();
+                serverStats.reset();
+                if (serverStats.getServerState().equals("leader")) {
+                    ((LeaderZooKeeperServer)zkServer).getLeader().getProposalStats().reset();
+                }
                 pw.println("Server stats reset.");
             }
         }
@@ -480,11 +481,16 @@ public class NettyServerCnxn extends ServerCnxn {
                     }
                     pw.println();
                 }
-                pw.print(zkServer.serverStats().toString());
+                ServerStats serverStats = zkServer.serverStats();
+                pw.print(serverStats.toString());
                 pw.print("Node count: ");
                 pw.println(zkServer.getZKDatabase().getNodeCount());
+                if (serverStats.getServerState().equals("leader")) {
+                    Leader leader = ((LeaderZooKeeperServer)zkServer).getLeader();
+                    ProposalStats proposalStats = leader.getProposalStats();
+                    pw.printf("Proposal sizes last/min/max: %s%n", proposalStats.toString());
+                }
             }
-            
         }
     }
     
@@ -577,13 +583,19 @@ public class NettyServerCnxn extends ServerCnxn {
                 print("open_file_descriptor_count", osMbean.getOpenFileDescriptorCount());
                 print("max_file_descriptor_count", osMbean.getMaxFileDescriptorCount());
             }
-          
+
+            print("fsync_threshold_exceed_count", stats.getFsyncThresholdExceedCount());
+
             if(stats.getServerState().equals("leader")) {
                 Leader leader = ((LeaderZooKeeperServer)zkServer).getLeader();
 
                 print("followers", leader.getLearners().size());
                 print("synced_followers", leader.getForwardingFollowers().size());
                 print("pending_syncs", leader.getNumPendingSyncs());
+
+                print("last_proposal_size", leader.getProposalStats().getLastProposalSize());
+                print("max_proposal_size", leader.getProposalStats().getMaxProposalSize());
+                print("min_proposal_size", leader.getProposalStats().getMinProposalSize());
             }
         }
 

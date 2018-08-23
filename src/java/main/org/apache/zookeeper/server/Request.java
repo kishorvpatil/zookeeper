@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs.OpCode;
+import org.apache.zookeeper.common.Time;
 import org.apache.zookeeper.data.Id;
 import org.apache.zookeeper.txn.TxnHeader;
 
@@ -57,6 +58,18 @@ public class Request {
         this.authInfo = authInfo;
     }
 
+    public Request(long sessionId, int xid, int type, TxnHeader hdr, Record txn, long zxid) {
+        this.sessionId = sessionId;
+        this.cxid = xid;
+        this.type = type;
+        this.hdr = hdr;
+        this.txn = txn;
+        this.zxid = zxid;
+        this.request = null;
+        this.cnxn = null;
+        this.authInfo = null;
+    }
+
     public final long sessionId;
 
     public final int cxid;
@@ -75,7 +88,7 @@ public class Request {
 
     public final List<Id> authInfo;
 
-    public final long createTime = System.currentTimeMillis();
+    public final long createTime = Time.currentElapsedTime();
     
     private Object owner;
     

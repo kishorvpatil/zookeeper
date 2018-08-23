@@ -41,12 +41,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.security.sasl.SaslException;
 
 import org.apache.jute.BinaryOutputArchive;
+import org.apache.zookeeper.common.Time;
 import org.apache.zookeeper.server.FinalRequestProcessor;
 import org.apache.zookeeper.server.Request;
 import org.apache.zookeeper.server.RequestProcessor;
 import org.apache.zookeeper.server.ZooKeeperThread;
 import org.apache.zookeeper.server.quorum.QuorumPeer.LearnerType;
 import org.apache.zookeeper.server.quorum.flexible.QuorumVerifier;
+import org.apache.zookeeper.server.util.SerializeUtils;
 import org.apache.zookeeper.server.util.ZxidUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,8 +80,8 @@ public class Leader {
     final LeaderZooKeeperServer zk;
 
     final QuorumPeer self;
-
-    private boolean quorumFormed = false;
+    // VisibleForTesting
+    protected boolean quorumFormed = false;
     
     // the follower acceptor thread
     LearnerCnxAcceptor cnxAcceptor;
@@ -100,7 +102,13 @@ public class Leader {
     // list of followers that are ready to follow (i.e synced with the leader)
     private final HashSet<LearnerHandler> forwardingFollowers =
         new HashSet<LearnerHandler>();
-    
+
+    private final ProposalStats proposalStats;
+
+    public ProposalStats getProposalStats() {
+        return proposalStats;
+    }
+
     /**
      * Returns a copy of the current forwarding follower snapshot
      */
@@ -184,6 +192,7 @@ public class Leader {
 
     Leader(QuorumPeer self,LeaderZooKeeperServer zk) throws IOException {
         this.self = self;
+        this.proposalStats = new ProposalStats();
         try {
             if (self.getQuorumListenOnAllIPs()) {
                 ss = new ServerSocket(self.getQuorumAddress().getPort());
@@ -365,7 +374,7 @@ public class Leader {
      * @throws InterruptedException
      */
     void lead() throws IOException, InterruptedException {
-        self.end_fle = System.currentTimeMillis();
+        self.end_fle = Time.currentElapsedTime();
         long electionTimeTaken = self.end_fle - self.start_fle;
         self.setElectionTimeTaken(electionTimeTaken);
         LOG.info("LEADING - LEADER ELECTION TOOK - {}", electionTimeTaken);
@@ -375,7 +384,7 @@ public class Leader {
         zk.registerJMX(new LeaderBean(this, zk), self.jmxLocalPeerBean);
 
         try {
-            self.tick = 0;
+            self.tick.set(0);
             zk.loadData();
             
             leaderStateSummary = new StateSummary(self.getCurrentEpoch(), zk.getLastProcessedZxid());
@@ -410,7 +419,7 @@ public class Leader {
             // us. We do this by waiting for the NEWLEADER packet to get
             // acknowledged
             try {
-                waitForNewLeaderAck(self.getId(), zk.getZxid(), LearnerType.PARTICIPANT);
+                waitForNewLeaderAck(self.getId(), zk.getZxid());
             } catch (InterruptedException e) {
                 shutdown("Waiting for a quorum of followers, only synced with sids: [ "
                         + getSidSetString(newLeaderProposal.ackSet) + " ]");
@@ -423,7 +432,7 @@ public class Leader {
                             + "Perhaps the initTicks need to be increased.");
                 }
                 Thread.sleep(self.tickTime);
-                self.tick++;
+                self.tick.incrementAndGet();
                 return;
             }
             
@@ -464,7 +473,7 @@ public class Leader {
             while (true) {
                 Thread.sleep(self.tickTime / 2);
                 if (!tickSkip) {
-                    self.tick++;
+                    self.tick.incrementAndGet();
                 }
                 HashSet<Long> syncedSet = new HashSet<Long>();
 
@@ -763,20 +772,9 @@ public class Leader {
             shutdown(msg);
             throw new XidRolloverException(msg);
         }
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        BinaryOutputArchive boa = BinaryOutputArchive.getArchive(baos);
-        try {
-            request.hdr.serialize(boa, "hdr");
-            if (request.txn != null) {
-                request.txn.serialize(boa, "txn");
-            }
-            baos.close();
-        } catch (IOException e) {
-            LOG.warn("This really should be impossible", e);
-        }
-        QuorumPacket pp = new QuorumPacket(Leader.PROPOSAL, request.zxid, 
-                baos.toByteArray(), null);
+        byte[] data = SerializeUtils.serializeRequest(request);
+        proposalStats.setLastProposalSize(data.length);
+        QuorumPacket pp = new QuorumPacket(Leader.PROPOSAL, request.zxid, data, null);
         
         Proposal p = new Proposal();
         p.packet = pp;
@@ -867,8 +865,8 @@ public class Leader {
                 
         return lastProposed;
     }
-
-    private HashSet<Long> connectingFollowers = new HashSet<Long>();
+    // VisibleForTesting
+    protected Set<Long> connectingFollowers = new HashSet<Long>();
     public long getEpochToPropose(long sid, long lastAcceptedEpoch) throws InterruptedException, IOException {
         synchronized(connectingFollowers) {
             if (!waitingForNewEpoch) {
@@ -877,7 +875,9 @@ public class Leader {
             if (lastAcceptedEpoch >= epoch) {
                 epoch = lastAcceptedEpoch+1;
             }
-            connectingFollowers.add(sid);
+            if (isParticipant(sid)) {
+                connectingFollowers.add(sid);
+            }
             QuorumVerifier verifier = self.getQuorumVerifier();
             if (connectingFollowers.contains(self.getId()) && 
                                             verifier.containsQuorum(connectingFollowers)) {
@@ -885,12 +885,12 @@ public class Leader {
                 self.setAcceptedEpoch(epoch);
                 connectingFollowers.notifyAll();
             } else {
-                long start = System.currentTimeMillis();
+                long start = Time.currentElapsedTime();
                 long cur = start;
                 long end = start + self.getInitLimit()*self.getTickTime();
                 while(waitingForNewEpoch && cur < end) {
                     connectingFollowers.wait(end - cur);
-                    cur = System.currentTimeMillis();
+                    cur = Time.currentElapsedTime();
                 }
                 if (waitingForNewEpoch) {
                     throw new InterruptedException("Timeout while waiting for epoch from quorum");        
@@ -899,9 +899,10 @@ public class Leader {
             return epoch;
         }
     }
-
-    private HashSet<Long> electingFollowers = new HashSet<Long>();
-    private boolean electionFinished = false;
+    // VisibleForTesting
+    protected Set<Long> electingFollowers = new HashSet<Long>();
+    // VisibleForTesting
+    protected boolean electionFinished = false;
     public void waitForEpochAck(long id, StateSummary ss) throws IOException, InterruptedException {
         synchronized(electingFollowers) {
             if (electionFinished) {
@@ -915,19 +916,21 @@ public class Leader {
                                                     + leaderStateSummary.getLastZxid()
                                                     + " (last zxid)");
                 }
-                electingFollowers.add(id);
+                if (isParticipant(id)) {
+                    electingFollowers.add(id);
+                }
             }
             QuorumVerifier verifier = self.getQuorumVerifier();
             if (electingFollowers.contains(self.getId()) && verifier.containsQuorum(electingFollowers)) {
                 electionFinished = true;
                 electingFollowers.notifyAll();
             } else {                
-                long start = System.currentTimeMillis();
+                long start = Time.currentElapsedTime();
                 long cur = start;
                 long end = start + self.getInitLimit()*self.getTickTime();
                 while(!electionFinished && cur < end) {
                     electingFollowers.wait(end - cur);
-                    cur = System.currentTimeMillis();
+                    cur = Time.currentElapsedTime();
                 }
                 if (!electionFinished) {
                     throw new InterruptedException("Timeout while waiting for epoch to be acked by quorum");
@@ -980,10 +983,9 @@ public class Leader {
      * sufficient acks.
      *
      * @param sid
-     * @param learnerType
      * @throws InterruptedException
      */
-    public void waitForNewLeaderAck(long sid, long zxid, LearnerType learnerType)
+    public void waitForNewLeaderAck(long sid, long zxid)
             throws InterruptedException {
 
         synchronized (newLeaderProposal.ackSet) {
@@ -1001,7 +1003,7 @@ public class Leader {
                 return;
             }
 
-            if (learnerType == LearnerType.PARTICIPANT) {
+            if (isParticipant(sid)) {
                 newLeaderProposal.ackSet.add(sid);
             }
 
@@ -1010,12 +1012,12 @@ public class Leader {
                 quorumFormed = true;
                 newLeaderProposal.ackSet.notifyAll();
             } else {
-                long start = System.currentTimeMillis();
+                long start = Time.currentElapsedTime();
                 long cur = start;
                 long end = start + self.getInitLimit() * self.getTickTime();
                 while (!quorumFormed && cur < end) {
                     newLeaderProposal.ackSet.wait(end - cur);
-                    cur = System.currentTimeMillis();
+                    cur = Time.currentElapsedTime();
                 }
                 if (!quorumFormed) {
                     throw new InterruptedException(
@@ -1073,5 +1075,9 @@ public class Leader {
 
     private boolean isRunning() {
         return self.isRunning() && zk.isRunning();
+    }
+
+    private boolean isParticipant(long sid) {
+        return self.getVotingView().containsKey(sid);
     }
 }

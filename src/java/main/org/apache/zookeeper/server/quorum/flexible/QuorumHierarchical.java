@@ -23,10 +23,10 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.Map.Entry;
+import java.util.Set;
 
 
 import org.slf4j.Logger;
@@ -206,8 +206,9 @@ public class QuorumHierarchical implements QuorumVerifier {
      * different places, so we have a separate method.
      */
     private void computeGroupWeight(){
-        for(long sid : serverGroup.keySet()){
-            Long gid = serverGroup.get(sid);
+        for(Entry<Long, Long> entry : serverGroup.entrySet()){
+            Long sid = entry.getKey();
+            Long gid = entry.getValue();
             if(!groupWeight.containsKey(gid))
                 groupWeight.put(gid, serverWeight.get(sid));
             else {
@@ -231,7 +232,7 @@ public class QuorumHierarchical implements QuorumVerifier {
     /**
      * Verifies if a given set is a quorum.
      */
-    public boolean containsQuorum(HashSet<Long> set){
+    public boolean containsQuorum(Set<Long> set){
         HashMap<Long, Long> expansion = new HashMap<Long, Long>();
         
         /*
@@ -254,9 +255,10 @@ public class QuorumHierarchical implements QuorumVerifier {
          * Check if all groups have majority
          */
         int majGroupCounter = 0;
-        for(long gid : expansion.keySet()) {
-            LOG.debug("Group info: " + expansion.get(gid) + ", " + gid + ", " + groupWeight.get(gid));
-            if(expansion.get(gid) > (groupWeight.get(gid) / 2) )
+        for(Entry<Long, Long> entry : expansion.entrySet()) {
+            Long gid = entry.getKey();
+            LOG.debug("Group info: " + entry.getValue() + ", " + gid + ", " + groupWeight.get(gid));
+            if(entry.getValue() > (groupWeight.get(gid) / 2) )
                 majGroupCounter++;
         }
         

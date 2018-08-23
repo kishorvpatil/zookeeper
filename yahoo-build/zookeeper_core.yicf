@@ -2,7 +2,7 @@
 PRODUCT_NAME = zookeeper_core
 VERSION=`cat VERSION`
 BASE_VERSION=`cat BASE_VERSION`
-LONG_DESC = `cat README.txt`
+LONG_DESC = `cat README.md`
 SHORT_DESC = zookeeper_core is simply a corp internal release of apache zookeeper project. Don't use it directly because it doesn't support yinst settings. Use zookeeper_server and zookeeper_client instead.
 CUSTODIAN = zookeeper-devel@oath.com https://zookeeper.apache.org/
 
@@ -19,7 +19,7 @@ YINST requires pkg yjava_jdk 1.8 *
 
 file 444 - - lib64/zookeeper/$(BASE_VERSION)/LICENSE.txt build/zookeeper-$(BASE_VERSION)/LICENSE.txt
 file 444 - - lib64/zookeeper/$(BASE_VERSION)/NOTICE.txt  build/zookeeper-$(BASE_VERSION)/NOTICE.txt
-file 444 - - lib64/zookeeper/$(BASE_VERSION)/README.txt  build/zookeeper-$(BASE_VERSION)/README.txt
+file 444 - - lib64/zookeeper/$(BASE_VERSION)/README.md  build/zookeeper-$(BASE_VERSION)/README.md
 
 find 755 - - lib64/zookeeper/$(BASE_VERSION)/bin/      build/zookeeper-$(BASE_VERSION)/bin/ -type f
 find   - - - lib64/zookeeper/$(BASE_VERSION)/lib/      build/zookeeper-$(BASE_VERSION)/lib/ -type f

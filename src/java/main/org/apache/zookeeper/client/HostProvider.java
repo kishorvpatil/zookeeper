@@ -18,7 +18,10 @@
 
 package org.apache.zookeeper.client;
 
+import org.apache.yetus.audience.InterfaceAudience;
+
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 /**
  * A set of hosts a ZooKeeper client should connect to.
@@ -39,16 +42,18 @@ import java.net.InetSocketAddress;
  * * A HostProvider that re-resolves the InetSocketAddress after a timeout. 
  * * A HostProvider that prefers nearby hosts.
  */
+@InterfaceAudience.Public
 public interface HostProvider {
     public int size();
 
     /**
      * The next host to try to connect to.
-     * 
+     *
      * For a spinDelay of 0 there should be no wait.
-     * 
-     * @param spinDelay
-     *            Milliseconds to wait if all hosts have been tried once.
+     *
+     * @param spinDelay Milliseconds to wait if all hosts have been tried once.
+     * @return The next host to try to connect to with resolved address. If the host is not resolvable, the unresolved
+     * address will be returned.
      */
     public InetSocketAddress next(long spinDelay);
 
