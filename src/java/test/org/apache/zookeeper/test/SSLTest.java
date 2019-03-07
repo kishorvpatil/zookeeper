@@ -33,8 +33,10 @@ import org.apache.zookeeper.server.quorum.QuorumPeerTestBase;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class SSLTest extends QuorumPeerTestBase {
 
     @Before

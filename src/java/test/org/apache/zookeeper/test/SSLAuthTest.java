@@ -28,8 +28,10 @@ import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class SSLAuthTest extends ClientBase {
     @Before
     public void setUp() throws Exception {

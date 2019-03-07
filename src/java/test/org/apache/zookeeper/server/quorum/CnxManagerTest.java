@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.zookeeper.test;
+package org.apache.zookeeper.server.quorum;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -45,12 +45,13 @@ import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeer.LearnerType;
 import org.apache.zookeeper.server.quorum.QuorumPeer.QuorumServer;
 import org.apache.zookeeper.server.quorum.QuorumPeer.ServerState;
+import org.apache.zookeeper.test.ClientBase;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class CnxManagerTest extends ZKTestCase {
-    protected static final Logger LOG = LoggerFactory.getLogger(FLENewEpochTest.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(CnxManagerTest.class);
     protected static final int THRESHOLD = 4;
 
     int count;

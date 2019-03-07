@@ -31,12 +31,6 @@ import org.apache.zookeeper.txn.TxnHeader;
 public interface TxnLog {
 
     /**
-     +     * Setter for ServerStats to monitor fsync threshold exceed
-     +     * @param serverStats used to update fsyncThresholdExceedCount
-     +     */
-     void setServerStats(ServerStats serverStats);
-    
-    /**
      * roll the current
      * log being appended to
      * @throws IOException 

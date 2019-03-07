@@ -186,9 +186,4 @@ public abstract class QuorumZooKeeperServer extends ZooKeeperServer {
     protected void setState(State state) {
         this.state = state;
     }
-
-    @Override
-    protected void setState(State state) {
-        this.state = state;
-    }
 }

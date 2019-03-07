@@ -97,11 +97,6 @@ public class ReadOnlyZooKeeperServer extends ZooKeeperServer {
     }
 
     @Override
-    protected void setState(State state) {
-        this.state = state;
-    }
-
-    @Override
     protected void unregisterJMX() {
         // unregister from JMX
         try {

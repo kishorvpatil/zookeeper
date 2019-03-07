@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -721,7 +722,7 @@ public class AuthFastLeaderElection implements Election {
             lastEpoch = 0;
 
             for (int i = 0; i < threads; ++i) {
-                Thread t = new ZooKeeperThread(new WorkerSender(3),
+                Thread t = new Thread(new WorkerSender(3),
                         "WorkerSender Thread: " + (i + 1));
                 t.setDaemon(true);
                 t.start();
@@ -733,8 +734,8 @@ public class AuthFastLeaderElection implements Election {
                 addrChallengeMap.put(saddr, new ConcurrentHashMap<Long, Long>());
             }
 
-            Thread t = new ZooKeeperThread(new WorkerReceiver(s, this),
-                    "WorkerReceiver-" + s.getRemoteSocketAddress());
+            Thread t = new Thread(new WorkerReceiver(s, this),
+                    "WorkerReceiver Thread");
             t.start();
         }
 
@@ -801,7 +802,7 @@ public class AuthFastLeaderElection implements Election {
 
     }
 
-    private boolean termPredicate(HashMap<InetSocketAddress, Vote> votes,
+    private boolean termPredicate(Map<InetSocketAddress, Vote> votes,
             long l, long zxid) {
 
 

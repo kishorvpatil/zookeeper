@@ -104,15 +104,6 @@ public class MaxCnxnsTest extends ClientBase {
                     }
                 }
             }
-            finally {
-                if (sChannel != null) {
-                    try {
-                        sChannel.close();
-                    }
-                    catch (Exception e) {
-                    }
-                }
-            }
         }
     }
 
