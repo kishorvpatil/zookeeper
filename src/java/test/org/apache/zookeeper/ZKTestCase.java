@@ -37,6 +37,7 @@ import java.net.InetAddress;
  * Basic utilities shared by all tests. Also logging of various events during
  * the test execution (start/stop/success/failure/etc...)
  */
+@SuppressWarnings("deprecation")
 @RunWith(JUnit4ZKTestRunner.class)
 public class ZKTestCase {
     private static final Logger LOG = LoggerFactory.getLogger(ZKTestCase.class);
@@ -51,6 +52,13 @@ public class ZKTestCase {
     public MethodRule watchman = new TestWatchman() {
         @Override
         public void starting(FrameworkMethod method) {
+            // By default, disable starting a JettyAdminServer in tests to avoid
+            // accidentally attempting to start multiple admin servers on the
+            // same port.
+            System.setProperty("zookeeper.admin.enableServer", "false");
+            // ZOOKEEPER-2693 disables all 4lw by default.
+            // Here we enable the 4lw which ZooKeeper tests depends.
+            System.setProperty("zookeeper.4lw.commands.whitelist", "*");
             testName = method.getName();
             // ZOOKEEPER-2693 disables all 4lw by default.
             // Here we enable the 4lw which ZooKeeper tests depends.

@@ -46,7 +46,10 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -94,7 +97,7 @@ public class PrepRequestProcessorTest extends ClientBase {
         processor.pRequest(foo);
 
         Assert.assertEquals("Request should have marshalling error", new ErrorTxn(KeeperException.Code.MARSHALLINGERROR.intValue()),
-                outcome.txn);
+                outcome.getTxn());
         Assert.assertTrue("request hasn't been processed in chain", pLatch.await(5, TimeUnit.SECONDS));
     }
 
@@ -104,10 +107,8 @@ public class PrepRequestProcessorTest extends ClientBase {
         BinaryOutputArchive boa = BinaryOutputArchive.getArchive(baos);
         record.serialize(boa, "request");
         baos.close();
-
         // Id
         List<Id> ids = Arrays.asList(Ids.ANYONE_ID_UNSAFE);
-
         return new Request(null, 1l, 0, opCode, ByteBuffer.wrap(baos.toByteArray()), ids);
     }
 
@@ -193,7 +194,7 @@ public class PrepRequestProcessorTest extends ClientBase {
         Request req = createRequest(record, OpCode.setData);
         processor.pRequest(req);
         pLatch.await();
-        Assert.assertEquals(outcome.hdr.getType(), OpCode.error);
+        Assert.assertEquals(outcome.getHdr().getType(), OpCode.error);
         Assert.assertEquals(outcome.getException().code(), KeeperException.Code.BADARGUMENTS);
     }
 
@@ -204,24 +205,28 @@ public class PrepRequestProcessorTest extends ClientBase {
             outcome = request;
             pLatch.countDown();
         }
-
         @Override
         public void shutdown() {
             // TODO Auto-generated method stub
+            
         }
     }
-
+    
     private class MySessionTracker implements SessionTracker {
         @Override
-        public void addSession(long id, int to) {
+        public boolean addGlobalSession(long id, int to) {
             // TODO Auto-generated method stub
-            
+            return false;
+        }
+        @Override
+        public boolean addSession(long id, int to) {
+            // TODO Auto-generated method stub
+            return false;
         }
         @Override
         public void checkSession(long sessionId, Object owner)
                 throws SessionExpiredException, SessionMovedException {
             // TODO Auto-generated method stub
-            
         }
         @Override
         public long createSession(int sessionTimeout) {
@@ -231,23 +236,27 @@ public class PrepRequestProcessorTest extends ClientBase {
         @Override
         public void dumpSessions(PrintWriter pwriter) {
             // TODO Auto-generated method stub
-            
+
         }
          @Override
         public void removeSession(long sessionId) {
             // TODO Auto-generated method stub
-            
+
+        }
+        public int upgradeSession(long sessionId) {
+             // TODO Auto-generated method stub
+             return 0;
         }
         @Override
         public void setOwner(long id, Object owner)
                 throws SessionExpiredException {
             // TODO Auto-generated method stub
-            
+
         }
         @Override
         public void shutdown() {
             // TODO Auto-generated method stub
-            
+
         }
         @Override
         public boolean touchSession(long sessionId, int sessionTimeout) {
@@ -257,6 +266,20 @@ public class PrepRequestProcessorTest extends ClientBase {
         @Override
         public void setSessionClosing(long sessionId) {
           // TODO Auto-generated method stub
+        }
+        @Override
+        public boolean isTrackingSession(long sessionId) {
+            // TODO Auto-generated method stub
+            return false;
+        }
+        @Override
+        public void checkGlobalSession(long sessionId, Object owner)
+                throws SessionExpiredException, SessionMovedException {
+            // TODO Auto-generated method stub
+        }
+        @Override
+        public Map<Long, Set<Long>> getSessionExpiryMap() {
+            return new HashMap<Long, Set<Long>>();
         }
     }
 }

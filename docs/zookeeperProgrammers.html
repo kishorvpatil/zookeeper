@@ -67,7 +67,7 @@
 <a class="unselected" href="https://cwiki.apache.org/confluence/display/ZOOKEEPER/">Wiki</a>
 </li>
 <li class="current">
-<a class="selected" href="index.html">ZooKeeper 3.4 Documentation</a>
+<a class="selected" href="index.html">ZooKeeper 3.5 Documentation</a>
 </li>
 </ul>
 <!--+
@@ -135,23 +135,8 @@ document.write("Last Published: " + document.lastModified);
 <a href="recipes.html">Recipes</a>
 </div>
 </div>
-<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">BookKeeper</div>
+<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">Admin &amp; Ops</div>
 <div id="menu_1.3" class="menuitemgroup">
-<div class="menuitem">
-<a href="bookkeeperStarted.html">Getting started</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperOverview.html">Overview</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperConfig.html">Setup guide</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperProgrammer.html">Programmer's guide</a>
-</div>
-</div>
-<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Admin &amp; Ops</div>
-<div id="menu_1.4" class="menuitemgroup">
 <div class="menuitem">
 <a href="zookeeperAdmin.html">Administrator's Guide</a>
 </div>
@@ -164,15 +149,18 @@ document.write("Last Published: " + document.lastModified);
 <div class="menuitem">
 <a href="zookeeperObservers.html">Observers Guide</a>
 </div>
+<div class="menuitem">
+<a href="zookeeperReconfig.html">Dynamic Reconfiguration</a>
 </div>
-<div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Contributor</div>
-<div id="menu_1.5" class="menuitemgroup">
+</div>
+<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Contributor</div>
+<div id="menu_1.4" class="menuitemgroup">
 <div class="menuitem">
 <a href="zookeeperInternals.html">ZooKeeper Internals</a>
 </div>
 </div>
-<div onclick="SwitchMenu('menu_1.6', 'skin/')" id="menu_1.6Title" class="menutitle">Miscellaneous</div>
-<div id="menu_1.6" class="menuitemgroup">
+<div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Miscellaneous</div>
+<div id="menu_1.5" class="menuitemgroup">
 <div class="menuitem">
 <a href="https://cwiki.apache.org/confluence/display/ZOOKEEPER">Wiki</a>
 </div>
@@ -228,6 +216,12 @@ document.write("Last Published: " + document.lastModified);
 <li>
 <a href="#Sequence+Nodes+--+Unique+Naming">Sequence Nodes -- Unique Naming</a>
 </li>
+<li>
+<a href="#Container+Nodes">Container Nodes</a>
+</li>
+<li>
+<a href="#TTL+Nodes">TTL Nodes</a>
+</li>
 </ul>
 </li>
 <li>
@@ -246,6 +240,9 @@ document.write("Last Published: " + document.lastModified);
 <ul class="minitoc">
 <li>
 <a href="#sc_WatchSemantics">Semantics of Watches</a>
+</li>
+<li>
+<a href="#sc_WatchRemoval">Remove Watches</a>
 </li>
 <li>
 <a href="#sc_WatchGuarantees">What ZooKeeper Guarantees about Watches</a>
@@ -282,6 +279,11 @@ document.write("Last Published: " + document.lastModified);
 <ul class="minitoc">
 <li>
 <a href="#Java+Binding">Java Binding</a>
+<ul class="minitoc">
+<li>
+<a href="#sc_java_client_configuration">Client Configuration Parameters</a>
+</li>
+</ul>
 </li>
 <li>
 <a href="#C+Binding">C Binding</a>
@@ -461,7 +463,7 @@ document.write("Last Published: " + document.lastModified);
 <li>
         
 <p>The following characters can't be used because they don't
-        display well, or render in confusing ways: \u0001 - \u0019 and \u007F
+        display well, or render in confusing ways: \u0001 - \u001F and \u007F
         - \u009F.</p>
       
 </li>
@@ -469,7 +471,7 @@ document.write("Last Published: " + document.lastModified);
       
 <li>
         
-<p>The following characters are not allowed: \ud800 -uF8FFF,
+<p>The following characters are not allowed: \ud800 - uF8FF,
         \uFFF0 - uFFFF.</p>
       
 </li>
@@ -522,7 +524,7 @@ document.write("Last Published: " + document.lastModified);
       
 </div>
 </div>
-<p> A znode is the main abstraction a programmer needs to be aware of. Znodes have
+<p>Znodes are the main enitity that a programmer access. They have
       several characteristics that are worth mentioning here.</p>
 <a name="sc_zkDataMode_watches"></a>
 <h4>Watches</h4>
@@ -571,6 +573,33 @@ document.write("Last Published: " + document.lastModified);
         (4bytes) maintained by the parent node, the counter will
         overflow when incremented beyond 2147483647 (resulting in a
         name "&lt;path&gt;-2147483648").</p>
+<a name="Container+Nodes"></a>
+<h4>Container Nodes</h4>
+<p>
+<strong>Added in 3.5.3</strong>
+</p>
+<p>ZooKeeper has the notion of container znodes. Container znodes are
+          special purpose znodes useful for recipes such as leader, lock, etc.
+          When the last child of a container is deleted, the container becomes
+          a candidate to be deleted by the server at some point in the future.</p>
+<p>Given this property, you should be prepared to get
+          KeeperException.NoNodeException when creating children inside of
+          container znodes. i.e. when creating child znodes inside of container znodes
+          always check for KeeperException.NoNodeException and recreate the container
+          znode when it occurs.</p>
+<a name="TTL+Nodes"></a>
+<h4>TTL Nodes</h4>
+<p>
+<strong>Added in 3.5.3</strong>
+</p>
+<p>When creating PERSISTENT or PERSISTENT_SEQUENTIAL znodes,
+          you can optionally set a TTL in milliseconds for the znode. If the znode
+          is not modified within the TTL and has no children it will become a candidate
+          to be deleted by the server at some point in the future.</p>
+<p>Note: TTL Nodes must be enabled via System property as
+        they are disabled by default. See the <a href="zookeeperAdmin.html#sc_configuration">Administrator's
+        Guide</a> for details. If you attempt to create TTL Nodes without the proper System property set the server
+        will throw <em>KeeperException.UnimplementedException</em>.</p>
 <a name="sc_timeInZk"></a>
 <h3 class="h4">Time in ZooKeeper</h3>
 <p>ZooKeeper tracks time multiple ways:</p>
@@ -966,6 +995,38 @@ document.write("Last Published: " + document.lastModified);
       a saved session id and password. One of the clients will reestablish the connection
       and the second client will be disconnected (causing the pair to attempt to re-establish
       its connection/session indefinitely).</p>
+<p> 
+<strong>Updating the list of servers</strong>.  We allow a client to 
+      update the connection string by providing a new comma separated list of host:port pairs, 
+      each corresponding to a ZooKeeper server. The function invokes a probabilistic load-balancing 
+      algorithm which may cause the client to disconnect from its current host with the goal
+      to achieve expected uniform number of connections per server in the new list. 
+      In case the current host to which the client is connected is not in the new list
+      this call will always cause the connection to be dropped. Otherwise, the decision
+	  is based on whether the number of servers has increased or decreased and by how much.	
+	</p>
+<p>
+      For example, if the previous connection string contained 3 hosts and now the list contains
+      these 3 hosts and 2 more hosts, 40% of clients connected to each of the 3 hosts will
+      move to one of the new hosts in order to balance the load. The algorithm will cause the client 
+      to drop its connection to the current host to which it is connected with probability 0.4 and in this 
+	  case cause the client to connect to one of the 2 new hosts, chosen at random.
+    </p>
+<p>
+	  Another example -- suppose we have 5 hosts and now update the list to remove 2 of the hosts, 
+	  the clients connected to the 3 remaining hosts will stay connected, whereas all clients connected 
+	  to the 2 removed hosts will need to move to one of the 3 hosts, chosen at random. If the connection
+	  is dropped, the client moves to a special mode where he chooses a new server to connect to using the
+	  probabilistic algorithm, and not just round robin. 
+    </p>
+<p>
+	  In the first example, each client decides to disconnect with probability 0.4 but once the decision is
+	  made, it will try to connect to a random new server and only if it cannot connect to any of the new 
+	  servers will it try to connect to the old ones. After finding a server, or trying all servers in the 
+	  new list and failing to connect, the client moves back to the normal mode of operation where it picks
+	  an arbitrary server from the connectString and attempt to connect to it. If that fails, is will continue
+	  trying different random servers in round robin. (see above the algorithm used to initially choose a server)
+    </p>
 </div>
 
   
@@ -1104,6 +1165,38 @@ document.write("Last Published: " + document.lastModified);
 </li>
       
 </ul>
+<a name="sc_WatchRemoval"></a>
+<h3 class="h4">Remove Watches</h3>
+<p>We can remove the watches registered on a znode with a call to 
+      removeWatches. Also, a ZooKeeper client can remove watches locally even
+      if there is no server connection by setting the local flag to true. The 
+      following list details the events which will be triggered after the 
+      successful watch removal.
+      </p>
+<ul>
+        
+<li>
+          
+<p>
+<strong>Child Remove event:</strong>
+</p>
+          
+<p>Watcher which was added with a call to getChildren.</p>
+        
+</li>
+        
+        
+<li>
+          
+<p>
+<strong>Data Remove event:</strong>
+</p>
+          
+<p>Watcher which was added with a call to exists or getData.</p>
+        
+</li>
+      
+</ul>
 <a name="sc_WatchGuarantees"></a>
 <h3 class="h4">What ZooKeeper Guarantees about Watches</h3>
 <p>With regard to watches, ZooKeeper maintains these
@@ -1218,11 +1311,14 @@ document.write("Last Published: " + document.lastModified);
     be able to read <em>/app/status</em>; ACLs are not
     recursive.</p>
 <p>ZooKeeper supports pluggable authentication schemes. Ids are
-    specified using the form <em>scheme:id</em>,
-    where <em>scheme</em> is a the authentication scheme
-    that the id corresponds to. For
-    example, <em>ip:172.16.16.1</em> is an id for a
-    host with the address <em>172.16.16.1</em>.</p>
+    specified using the form <em>scheme:expression</em>,
+    where <em>scheme</em> is the authentication scheme
+    that the id corresponds to. The set of valid expressions are defined
+    by the scheme. For example, <em>ip:172.16.16.1</em> is
+    an id for a host with the address <em>172.16.16.1</em>
+    using the <em>ip</em> scheme, whereas <em>digest:bob:password</em>
+    is an id for the user with the name of <em>bob</em> using
+    the <em>digest</em> scheme.</p>
 <p>When a client connects to ZooKeeper and authenticates
     itself, ZooKeeper associates all the ids that correspond to a
     client with the clients connection. These ids are checked against
@@ -1304,9 +1400,16 @@ document.write("Last Published: " + document.lastModified);
         
 <li>
 <p>
-<strong>auth</strong> doesn't
-        use any id, represents any authenticated
-        user.</p>
+<strong>auth</strong> is a special
+        scheme which ignores any provided expression and instead uses the current user,
+        credentials, and scheme. Any expression (whether <em>user</em> like with SASL
+        authentication or <em>user:password</em> like with DIGEST authentication) provided is ignored
+        by the ZooKeeper server when persisting the ACL. However, the expression must still be
+        provided in the ACL because the ACL must match the form <em>scheme:expression:perms</em>.
+        This scheme is provided as a convenience as it is a common use-case for
+        a user to create a znode and then restrict access to that znode to only that user.
+        If there is no authenticated user, setting an ACL with the auth scheme will fail.
+        </p>
 </li>
 
         
@@ -1334,6 +1437,16 @@ document.write("Last Published: " + document.lastModified);
         of <em>addr</em> are matched against the most
         significant <em>bits</em> of the client host
         IP.</p>
+</li>
+
+        
+<li>
+<p>
+<strong>x509</strong> uses the client
+        X500 Principal as an ACL ID identity. The ACL expression is the exact
+        X500 Principal name of a client. When using the secure port, clients
+        are automatically authenticated and their auth info for the x509 scheme
+        is set.</p>
 </li>
 
       
@@ -1844,6 +1957,126 @@ authProvider.2=com.f.MyAuth2
       (SESSION_EXPIRED and AUTH_FAILED), the ZooKeeper object becomes invalid.
       On a close, the two threads shut down and any further access on zookeeper
       handle is undefined behavior and should be avoided. </p>
+<a name="sc_java_client_configuration"></a>
+<h4>Client Configuration Parameters</h4>
+<p>
+            The following list contains configuration properties for the Java client. You can set any
+            of these properties using Java system properties. For server properties, please check the
+            following reference
+            <a href="zookeeperAdmin.html#sc_configuration">Server configuration section.</a>
+        
+</p>
+<dl>
+            
+<dt>
+<term>zookeeper.sasl.client</term>
+</dt>
+<dd>
+<p>Set the value to <strong>false</strong> to disable
+                    SASL authentication. Default is <strong>true</strong>.</p>
+</dd>
+            
+<dt>
+<term>zookeeper.sasl.clientconfig</term>
+</dt>
+<dd>
+<p>Specifies the context key in the JAAS login file. Default is "Client".</p>
+</dd>
+            
+<dt>
+<term>zookeeper.sasl.client.username</term>
+</dt>
+<dd>
+<p>Traditionally, a principal is divided into three parts: the primary, the instance, and the realm.
+                        The format of a typical Kerberos V5 principal is primary/instance@REALM.
+                        zookeeper.sasl.client.username specifies the primary part of the server principal. Default
+                        is "zookeeper". Instance part is derived from the server IP. Finally server's principal is
+                        username/IP@realm, where username is the value of zookeeper.sasl.client.username, IP is
+                        the server IP, and realm is the value of zookeeper.server.realm.</p>
+</dd>
+            
+<dt>
+<term>zookeeper.server.realm</term>
+</dt>
+<dd>
+<p>Realm part of the server principal. By default it is the client principal realm.</p>
+</dd>
+            
+<dt>
+<term>zookeeper.disableAutoWatchReset</term>
+</dt>
+<dd>
+<p>This switch controls whether automatic watch resetting is enabled. Clients automatically
+                        reset watches during session reconnect by default, this option allows the client to turn off
+                        this behavior by setting zookeeper.disableAutoWatchReset to <strong>true</strong>. 
+                    </p>
+</dd>
+            
+<dt>
+<term>zookeeper.client.secure</term>
+</dt>
+<dd>
+<p>
+                        If you want to connect to the server secure client port, you need to set this property to
+                        <strong>true</strong>
+                        on the client. This will connect to server using SSL with specified credentials. Note that
+                        it requires the Netty client.
+                    </p>
+</dd>
+            
+<dt>
+<term>zookeeper.clientCnxnSocket</term>
+</dt>
+<dd>
+<p>
+                        Specifies which ClientCnxnSocket to be used. Possible values are
+                        <strong>org.apache.zookeeper.ClientCnxnSocketNIO</strong>
+                        and
+                        <strong>org.apache.zookeeper.ClientCnxnSocketNetty</strong>
+                        . Default is
+                        <strong>org.apache.zookeeper.ClientCnxnSocketNIO</strong>
+                        . If you want to connect to server's secure client port, you need to set this property to
+                        <strong>org.apache.zookeeper.ClientCnxnSocketNetty</strong>
+                        on client.
+                    </p>
+</dd>
+            
+<dt>
+<term>zookeeper.ssl.keyStore.location and zookeeper.ssl.keyStore.password</term>
+</dt>
+<dd>
+<p>Specifies the file path to a JKS containing the local credentials to be used for SSL connections,
+                        and the password to unlock the file.
+                    </p>
+</dd>
+            
+<dt>
+<term>zookeeper.ssl.trustStore.location and zookeeper.ssl.trustStore.password</term>
+</dt>
+<dd>
+<p>Specifies the file path to a JKS containing the remote credentials to be used for SSL connections,
+                        and the password to unlock the file.
+                    </p>
+</dd>
+            
+<dt>
+<term>jute.maxbuffer</term>
+</dt>
+<dd>
+<p>It specifies the maximum size of the incoming data from the server. The default value is 4194304
+                        Bytes , or just 4 MB. This is really a sanity check. The ZooKeeper server is designed to store and send
+                        data on the order of kilobytes. If incoming data length is more than this value, an IOException
+                        is raised.</p>
+</dd>
+            
+<dt>
+<term>zookeeper.kinit</term>
+</dt>
+<dd>
+<p>Specifies path to kinit binary. Default is "/usr/bin/kinit".</p>
+</dd>
+        
+</dl>
 <a name="C+Binding"></a>
 <h3 class="h4">C Binding</h3>
 <p>The C binding has a single-threaded and multi-threaded library.
@@ -1994,7 +2227,7 @@ authProvider.2=com.f.MyAuth2
 </ol>
 <a name="Building+Your+Own+C+Client"></a>
 <h4>Building Your Own C Client</h4>
-<p>In order to be able to use the ZooKeeper API in your application
+<p>In order to be able to use the ZooKeeper C API in your application
         you have to remember to</p>
 <ol>
           
@@ -2022,9 +2255,8 @@ authProvider.2=com.f.MyAuth2
 <div class="note">
 <div class="label">Note</div>
 <div class="content">
-<p>
-          See <span class="codefrag filename">.../trunk/src/c/src/cli.c</span>
-            for an example of a C client implementation</p>
+<p>See <span class="codefrag filename">.../trunk/src/c/src/cli.c</span>
+          for an example of a C client implementation</p>
         
 </div>
 </div>

@@ -18,6 +18,7 @@
 package org.apache.zookeeper.server;
 
 import static org.apache.zookeeper.client.FourLetterWordMain.send4LetterWord;
+import static org.apache.zookeeper.server.command.AbstractFourLetterCommand.ZK_NOT_SERVING;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.zookeeper.PortAssignment;
 import org.apache.zookeeper.ZKTestCase;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.common.X509Exception.SSLContextException;
 import org.apache.zookeeper.test.ClientBase;
 import org.apache.zookeeper.test.ClientBase.CountdownWatcher;
 import org.junit.After;
@@ -44,7 +46,6 @@ public class ZooKeeperServerStartupTest extends ZKTestCase {
     private static int PORT = PortAssignment.unique();
     private static String HOST = "127.0.0.1";
     private static String HOSTPORT = HOST + ":" + PORT;
-    private static final String ZK_NOT_SERVING = "This ZooKeeper instance is not currently serving requests";
 
     private ServerCnxnFactory servcnxnf;
     private ZooKeeperServer zks;
@@ -66,9 +67,7 @@ public class ZooKeeperServerStartupTest extends ZKTestCase {
         if (zks.getZKDatabase() != null) {
             zks.getZKDatabase().close();
         }
-        if (tmpDir != null) {
-            ClientBase.recursiveDelete(tmpDir);
-        }
+        ClientBase.recursiveDelete(tmpDir);
     }
 
     /**
@@ -155,11 +154,10 @@ public class ZooKeeperServerStartupTest extends ZKTestCase {
             if (originalServerCnxnFactory == null) {
                 System.clearProperty(
                         ServerCnxnFactory.ZOOKEEPER_SERVER_CNXN_FACTORY);
-            } else {
-                System.setProperty(
-                        ServerCnxnFactory.ZOOKEEPER_SERVER_CNXN_FACTORY,
-                        originalServerCnxnFactory);
+                return;
             }
+            System.setProperty(ServerCnxnFactory.ZOOKEEPER_SERVER_CNXN_FACTORY,
+                    originalServerCnxnFactory);
         }
     }
 
@@ -168,61 +166,31 @@ public class ZooKeeperServerStartupTest extends ZKTestCase {
      * {@link https://issues.apache.org/jira/browse/ZOOKEEPER-2383}.
      */
     @Test(timeout = 30000)
-    public void testFourLetterWordsWithNIOServerCnxn() throws Exception {
+    public void testFourLetterWords() throws Exception {
         startSimpleZKServer(startupDelayLatch);
         verify("conf", ZK_NOT_SERVING);
         verify("crst", ZK_NOT_SERVING);
         verify("cons", ZK_NOT_SERVING);
+        verify("dirs", ZK_NOT_SERVING);
         verify("dump", ZK_NOT_SERVING);
         verify("mntr", ZK_NOT_SERVING);
         verify("stat", ZK_NOT_SERVING);
         verify("srst", ZK_NOT_SERVING);
+        verify("wchp", ZK_NOT_SERVING);
+        verify("wchc", ZK_NOT_SERVING);
         verify("wchs", ZK_NOT_SERVING);
         verify("isro", "null");
     }
 
-    /**
-     * Test case for
-     * {@link https://issues.apache.org/jira/browse/ZOOKEEPER-2383}.
-     */
-    @Test(timeout = 30000)
-    public void testFourLetterWordsWithNettyServerCnxn() throws Exception {
-        String originalServerCnxnFactory = System
-                .getProperty(ServerCnxnFactory.ZOOKEEPER_SERVER_CNXN_FACTORY);
-        try {
-            startSimpleZKServer(startupDelayLatch);
-            verify("conf", ZK_NOT_SERVING);
-            verify("crst", ZK_NOT_SERVING);
-            verify("cons", ZK_NOT_SERVING);
-            verify("dump", ZK_NOT_SERVING);
-            verify("mntr", ZK_NOT_SERVING);
-            verify("stat", ZK_NOT_SERVING);
-            verify("srst", ZK_NOT_SERVING);
-            verify("wchs", ZK_NOT_SERVING);
-            verify("isro", "null");
-        } finally {
-            // reset cnxn factory
-            if (originalServerCnxnFactory == null) {
-                System.clearProperty(
-                        ServerCnxnFactory.ZOOKEEPER_SERVER_CNXN_FACTORY);
-            } else {
-                System.setProperty(
-                        ServerCnxnFactory.ZOOKEEPER_SERVER_CNXN_FACTORY,
-                        originalServerCnxnFactory);
-            }
-        }
-    }
-
     private void verify(String cmd, String expected)
-            throws IOException {
+            throws IOException, SSLContextException {
         String resp = sendRequest(cmd);
         LOG.info("cmd " + cmd + " expected " + expected + " got " + resp);
-        Assert.assertTrue("Unexpected response: " + resp,
-                resp.contains(expected));
+        Assert.assertTrue("Unexpected response", resp.contains(expected));
     }
 
     private String sendRequest(String cmd)
-            throws IOException {
+            throws IOException, SSLContextException {
         return send4LetterWord(HOST, PORT, cmd);
     }
 

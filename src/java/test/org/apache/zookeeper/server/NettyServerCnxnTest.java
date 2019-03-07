@@ -18,18 +18,12 @@
 
 package org.apache.zookeeper.server;
 
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import junit.framework.Assert;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.server.NettyServerCnxnFactory.CnxnChannelHandler;
 import org.apache.zookeeper.test.ClientBase;
-import org.jboss.netty.channel.ChannelHandlerContext;
-import org.jboss.netty.channel.ChannelStateEvent;
+import org.junit.Assert;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,31 +46,16 @@ public class NettyServerCnxnTest extends ClientBase {
     /**
      * Test verifies the channel closure - while closing the channel
      * servercnxnfactory should remove all channel references to avoid
-     * duplicate channel closure. Duplicate closure may result in 
-     * indefinite hanging due to netty open issue.
+     * duplicate channel closure. Duplicate closure may result in indefinite
+     * hanging due to netty open issue.
      * 
      * @see <a href="https://issues.jboss.org/browse/NETTY-412">NETTY-412</a>
      */
-    @Test(timeout = 30000)
+    @Test(timeout = 40000)
     public void testSendCloseSession() throws Exception {
         Assert.assertTrue(
                 "Didn't instantiate ServerCnxnFactory with NettyServerCnxnFactory!",
                 serverFactory instanceof NettyServerCnxnFactory);
-
-        NettyServerCnxnFactory nettyServerFactory = (NettyServerCnxnFactory) serverFactory;
-        final CountDownLatch channelLatch = new CountDownLatch(1);
-        CnxnChannelHandler channelHandler = nettyServerFactory.new CnxnChannelHandler() {
-            @Override
-            public void channelDisconnected(ChannelHandlerContext ctx,
-                    ChannelStateEvent e) throws Exception {
-                LOG.info("Recieves channel disconnected event");
-                channelLatch.countDown();
-            }
-        };
-        LOG.info("Adding custom channel handler for simulation");
-        nettyServerFactory.bootstrap.getPipeline().remove("servercnxnfactory");
-        nettyServerFactory.bootstrap.getPipeline().addLast("servercnxnfactory",
-                channelHandler);
 
         final ZooKeeper zk = createClient();
         final String path = "/a";
@@ -93,9 +72,14 @@ public class NettyServerCnxnTest extends ClientBase {
                 serverCnxn.sendCloseSession();
             }
             LOG.info("Waiting for the channel disconnected event");
-            channelLatch.await(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS);
-            Assert.assertEquals("Mismatch in number of live connections!", 0,
-                    serverFactory.getNumAliveConnections());
+            int timeout = 0;
+            while (serverFactory.getNumAliveConnections() != 0) {
+                Thread.sleep(1000);
+                timeout += 1000;
+                if (timeout > CONNECTION_TIMEOUT) {
+                    Assert.fail("The number of live connections should be 0");
+                }
+            }
         } finally {
             zk.close();
         }

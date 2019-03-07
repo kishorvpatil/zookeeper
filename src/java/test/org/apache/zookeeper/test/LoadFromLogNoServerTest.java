@@ -100,9 +100,9 @@ public class LoadFromLogNoServerTest extends ZKTestCase {
         int prevCversion = parent.stat.getCversion();
         long prevPzxid = parent.stat.getPzxid();
         List<String> child = dt.getChildren(parentName, null, null);
-        String childStr = "";
+        StringBuilder childStr = new StringBuilder();
         for (String s : child) {
-            childStr += s + " ";
+            childStr.append(s).append(" ");
         }
         LOG.info("Children: " + childStr + " for " + parentName);
         LOG.info("(cverions, pzxid): " + prevCversion + ", " + prevPzxid);
@@ -122,7 +122,7 @@ public class LoadFromLogNoServerTest extends ZKTestCase {
             txnHeader = new TxnHeader(0xabcd, 0x123, prevPzxid + 1,
                     Time.currentElapsedTime(), ZooDefs.OpCode.create);
             txn = new CreateTxn(path, new byte[0], null, false, cversion);
-            ArrayList txnList = new ArrayList();
+            List<Txn> txnList = new ArrayList<Txn>();
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             BinaryOutputArchive boa = BinaryOutputArchive.getArchive(baos);
             txn.serialize(boa, "request") ;
@@ -138,9 +138,9 @@ public class LoadFromLogNoServerTest extends ZKTestCase {
         int newCversion = parent.stat.getCversion();
         long newPzxid = parent.stat.getPzxid();
         child = dt.getChildren(parentName, null, null);
-        childStr = "";
+        childStr = new StringBuilder();
         for (String s : child) {
-            childStr += s + " ";
+            childStr.append(s).append(" ");
         }
         LOG.info("Children: " + childStr + " for " + parentName);
         LOG.info("(cverions, pzxid): " +newCversion + ", " + newPzxid);
@@ -172,4 +172,5 @@ public class LoadFromLogNoServerTest extends ZKTestCase {
         Assert.assertTrue("Missing magic number ",
                 header.getMagic() == FileTxnLog.TXNLOG_MAGIC);
     }
+
 }

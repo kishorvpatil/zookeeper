@@ -84,11 +84,17 @@ public interface TxnLog {
     long getDbId() throws IOException;
     
     /**
-     * commmit the trasaction and make sure
+     * commit the transaction and make sure
      * they are persisted
      * @throws IOException
      */
     void commit() throws IOException;
+
+    /**
+     *
+     * @return transaction log's elapsed sync time in milliseconds
+     */
+    long getTxnLogSyncElapsedTime();
    
     /** 
      * close the transactions logs
@@ -123,6 +129,13 @@ public interface TxnLog {
          * @throws IOException
          */
         void close() throws IOException;
+        
+        /**
+         * Get an estimated storage space used to store transaction records
+         * that will return by this iterator
+         * @throws IOException
+         */
+        long getStorageSize() throws IOException;
     }
 }
 

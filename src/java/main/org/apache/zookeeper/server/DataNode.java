@@ -37,9 +37,6 @@ import org.apache.zookeeper.data.StatPersisted;
  * 
  */
 public class DataNode implements Record {
-    /** the parent of this datanode */
-    DataNode parent;
-
     /** the data for this datanode */
     byte data[];
 
@@ -81,8 +78,7 @@ public class DataNode implements Record {
      * @param stat
      *            the stat for this node.
      */
-    public DataNode(DataNode parent, byte data[], Long acl, StatPersisted stat) {
-        this.parent = parent;
+    public DataNode(byte data[], Long acl, StatPersisted stat) {
         this.data = data;
         this.acl = acl;
         this.stat = stat;
@@ -128,7 +124,8 @@ public class DataNode implements Record {
     /**
      * convenience methods to get the children
      * 
-     * @return the children of this datanode
+     * @return the children of this datanode. If the datanode has no children, empty
+     *         set is returned
      */
     public synchronized Set<String> getChildren() {
         if (children == null) {
@@ -136,6 +133,11 @@ public class DataNode implements Record {
         }
 
         return Collections.unmodifiableSet(children);
+    }
+
+    public synchronized long getApproximateDataSize() {
+        if(null==data) return 0;
+        return data.length;
     }
 
     synchronized public void copyStat(Stat to) {
@@ -146,7 +148,7 @@ public class DataNode implements Record {
         to.setMzxid(stat.getMzxid());
         to.setPzxid(stat.getPzxid());
         to.setVersion(stat.getVersion());
-        to.setEphemeralOwner(stat.getEphemeralOwner());
+        to.setEphemeralOwner(getClientEphemeralOwner(stat));
         to.setDataLength(data == null ? 0 : data.length);
         int numChildren = 0;
         if (this.children != null) {
@@ -157,6 +159,14 @@ public class DataNode implements Record {
         // for every create there is a delete except for the children still present
         to.setCversion(stat.getCversion()*2 - numChildren);
         to.setNumChildren(numChildren);
+    }
+
+    private static long getClientEphemeralOwner(StatPersisted stat) {
+        EphemeralType ephemeralType = EphemeralType.get(stat.getEphemeralOwner());
+        if (ephemeralType != EphemeralType.NORMAL) {
+            return 0;
+        }
+        return stat.getEphemeralOwner();
     }
 
     synchronized public void deserialize(InputArchive archive, String tag)

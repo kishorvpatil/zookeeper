@@ -18,6 +18,7 @@
 package org.apache.zookeeper.server.quorum;
 
 import static org.apache.zookeeper.test.ClientBase.CONNECTION_TIMEOUT;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
@@ -58,14 +59,15 @@ public class EphemeralNodeDeletionTest extends QuorumPeerTestBase {
         for (int i = 0; i < SERVER_COUNT; i++) {
             clientPorts[i] = PortAssignment.unique();
             server = "server." + i + "=127.0.0.1:" + PortAssignment.unique()
-                    + ":" + PortAssignment.unique();
+                    + ":" + PortAssignment.unique() + ":participant;127.0.0.1:"
+                    + clientPorts[i];
             sb.append(server + "\n");
         }
         String currentQuorumCfgSection = sb.toString();
-        System.out.println(currentQuorumCfgSection);
         // start all the servers
         for (int i = 0; i < SERVER_COUNT; i++) {
-            mt[i] = new MainThread(i, clientPorts[i], currentQuorumCfgSection) {
+            mt[i] = new MainThread(i, clientPorts[i], currentQuorumCfgSection,
+                    false) {
                 @Override
                 public TestQPMain getTestQPMain() {
                     return new MockTestQPMain();
@@ -90,9 +92,14 @@ public class EphemeralNodeDeletionTest extends QuorumPeerTestBase {
          * now the problem scenario starts
          */
 
+        Stat firstEphemeralNode = new Stat();
+
         // 1: create ephemeral node
         String nodePath = "/e1";
-        zk.create(nodePath, "1".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+        zk.create(nodePath, "1".getBytes(), Ids.OPEN_ACL_UNSAFE,
+                CreateMode.EPHEMERAL, firstEphemeralNode);
+        assertEquals("Current session and ephemeral owner should be same",
+                zk.getSessionId(), firstEphemeralNode.getEphemeralOwner());
 
         // 2: inject network problem in one of the follower
         CustomQuorumPeer follower = (CustomQuorumPeer) getByServerState(mt,
@@ -134,7 +141,9 @@ public class EphemeralNodeDeletionTest extends QuorumPeerTestBase {
         assertNull("ephemeral node must not exist", nodeAtFollower);
 
         // Create the node with another session
-        zk.create(nodePath, "2".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.EPHEMERAL);
+        Stat currentEphemeralNode = new Stat();
+        zk.create(nodePath, "2".getBytes(), Ids.OPEN_ACL_UNSAFE,
+                CreateMode.EPHEMERAL, currentEphemeralNode);
 
         // close the session and newly created ephemeral node should be deleted
         zk.close();
@@ -171,18 +180,18 @@ public class EphemeralNodeDeletionTest extends QuorumPeerTestBase {
         return null;
     }
 
-    static class CustomQuorumPeer extends QuorumPeer  {
+    static class CustomQuorumPeer extends QuorumPeer {
         private boolean injectError = false;
 
         public CustomQuorumPeer() throws SaslException {
+
         }
 
         @Override
         protected Follower makeFollower(FileTxnSnapLog logFactory)
                 throws IOException {
             return new Follower(this, new FollowerZooKeeperServer(logFactory,
-                    this, null /*DataTreeBuilder is never used*/,
-                    this.getZkDb())) {
+                    this, this.getZkDb())) {
 
                 @Override
                 void readPacket(QuorumPacket pp) throws IOException {

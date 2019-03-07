@@ -27,11 +27,12 @@ import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
+import java.util.Map;
 
 public class ZabUtils {
 
@@ -39,16 +40,27 @@ public class ZabUtils {
 
     public static final int SYNC_LIMIT = 2;
 
-    public static QuorumPeer createQuorumPeer(File tmpDir) throws IOException{
-        QuorumPeer peer = new QuorumPeer();
-        peer.syncLimit = 2;
+    public static QuorumPeer createQuorumPeer(File tmpDir) throws IOException, FileNotFoundException {
+        HashMap<Long, QuorumPeer.QuorumServer> peers = new HashMap<Long, QuorumPeer.QuorumServer>();
+        QuorumPeer peer = QuorumPeer.testingQuorumPeer();
+        peer.syncLimit = SYNC_LIMIT;
         peer.initLimit = 2;
         peer.tickTime = 2000;
-        peer.quorumPeers = new HashMap<Long, QuorumPeer.QuorumServer>();
-        peer.quorumPeers.put(0L, new QuorumPeer.QuorumServer(0, "127.0.0.1", PortAssignment.unique(), 0, null));
-        peer.quorumPeers.put(1L, new QuorumPeer.QuorumServer(1, "127.0.0.1", PortAssignment.unique(), 0, null));
-        peer.quorumPeers.put(2L, new QuorumPeer.QuorumServer(2, "127.0.0.1", PortAssignment.unique(), 0, null));
-        peer.setQuorumVerifier(new QuorumMaj(peer.quorumPeers.size()));
+
+        peers.put(0L, new QuorumPeer.QuorumServer(
+                0, new InetSocketAddress("127.0.0.1", PortAssignment.unique()),
+                new InetSocketAddress("127.0.0.1", PortAssignment.unique()),
+                new InetSocketAddress("127.0.0.1", PortAssignment.unique())));
+        peers.put(1L, new QuorumPeer.QuorumServer(
+                1, new InetSocketAddress("127.0.0.1", PortAssignment.unique()),
+                new InetSocketAddress("127.0.0.1", PortAssignment.unique()),
+                new InetSocketAddress("127.0.0.1", PortAssignment.unique())));
+        peers.put(2L, new QuorumPeer.QuorumServer(
+                2, new InetSocketAddress("127.0.0.1", PortAssignment.unique()),
+                new InetSocketAddress("127.0.0.1", PortAssignment.unique()),
+                new InetSocketAddress("127.0.0.1", PortAssignment.unique())));
+
+        peer.setQuorumVerifier(new QuorumMaj(peers), false);
         peer.setCnxnFactory(new NullServerCnxnFactory());
         File version2 = new File(tmpDir, "version-2");
         version2.mkdir();
@@ -62,13 +74,13 @@ public class ZabUtils {
     }
 
     public static Leader createLeader(File tmpDir, QuorumPeer peer)
-            throws IOException, NoSuchFieldException, IllegalAccessException{
+            throws IOException, NoSuchFieldException, IllegalAccessException {
         LeaderZooKeeperServer zk = prepareLeader(tmpDir, peer);
         return new Leader(peer, zk);
     }
 
-    public static MockLeader createMockLeader(File tmpDir, QuorumPeer peer)
-            throws IOException, NoSuchFieldException, IllegalAccessException{
+    public static Leader createMockLeader(File tmpDir, QuorumPeer peer)
+            throws IOException, NoSuchFieldException, IllegalAccessException {
         LeaderZooKeeperServer zk = prepareLeader(tmpDir, peer);
         return new MockLeader(peer, zk);
     }
@@ -77,16 +89,14 @@ public class ZabUtils {
             throws IOException, NoSuchFieldException, IllegalAccessException {
         FileTxnSnapLog logFactory = new FileTxnSnapLog(tmpDir, tmpDir);
         peer.setTxnFactory(logFactory);
-        Field addrField = peer.getClass().getDeclaredField("myQuorumAddr");
-        addrField.setAccessible(true);
-        addrField.set(peer, new InetSocketAddress(PortAssignment.unique()));
         ZKDatabase zkDb = new ZKDatabase(logFactory);
-        return new LeaderZooKeeperServer(logFactory, peer, new ZooKeeperServer.BasicDataTreeBuilder(), zkDb);
+        LeaderZooKeeperServer zk = new LeaderZooKeeperServer(logFactory, peer, zkDb);
+        return zk;
     }
 
     private static final class NullServerCnxnFactory extends ServerCnxnFactory {
-        public void startup(ZooKeeperServer zkServer) throws IOException,
-                InterruptedException {
+        public void startup(ZooKeeperServer zkServer, boolean startServer)
+                throws IOException, InterruptedException {
         }
         public void start() {
         }
@@ -108,16 +118,28 @@ public class ZabUtils {
         public Iterable<ServerCnxn> getConnections() {
             return null;
         }
-        public void configure(InetSocketAddress addr, int maxClientCnxns)
+        public void configure(InetSocketAddress addr, int maxcc, boolean secure)
                 throws IOException {
         }
-        public void closeSession(long sessionId) {
+
+        public boolean closeSession(long sessionId) {
+            return false;
         }
         public void closeAll() {
         }
         @Override
         public int getNumAliveConnections() {
             return 0;
+        }
+        @Override
+        public void reconfigure(InetSocketAddress addr) {
+        }
+        @Override
+        public void resetAllConnectionStats() {
+        }
+        @Override
+        public Iterable<Map<String, Object>> getAllConnectionInfo(boolean brief) {
+            return null;
         }
     }
 

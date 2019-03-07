@@ -25,13 +25,13 @@ import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZKTestCase;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.server.DataTree;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.apache.zookeeper.server.DataNode;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -48,6 +48,8 @@ import java.lang.reflect.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.List;
+import java.util.ArrayList;
 
 public class DataTreeTest extends ZKTestCase {
     protected static final Logger LOG = LoggerFactory.getLogger(DataTreeTest.class);
@@ -115,7 +117,7 @@ public class DataTreeTest extends ZKTestCase {
                     dataTree.getNode("/").stat.getCversion() + 1, 1, 1);
         }
     }
-    
+
     @Test(timeout = 60000)
     public void testRootWatchTriggered() throws Exception {
         class MyWatcher implements Watcher{
@@ -150,18 +152,18 @@ public class DataTreeTest extends ZKTestCase {
                 newCversion + ", " + newPzxid + ">",
                 (newCversion == prevCversion + 1 && newPzxid == prevPzxid + 1));
     }
-   
+
     @Test(timeout = 60000)
     public void testPathTrieClearOnDeserialize() throws Exception {
 
         //Create a DataTree with quota nodes so PathTrie get updated
         DataTree dserTree = new DataTree();
-        
+
         dserTree.createNode("/bug", new byte[20], null, -1, 1, 1, 1);
         dserTree.createNode(Quotas.quotaZookeeper+"/bug", null, null, -1, 1, 1, 1);
         dserTree.createNode(Quotas.quotaPath("/bug"), new byte[20], null, -1, 1, 1, 1);
         dserTree.createNode(Quotas.statPath("/bug"), new byte[20], null, -1, 1, 1, 1);
-        
+
         //deserialize a DataTree; this should clear the old /bug nodes and pathTrie
         DataTree tree = new DataTree();
 
@@ -179,7 +181,7 @@ public class DataTreeTest extends ZKTestCase {
         PathTrie pTrie = (PathTrie)pfield.get(dserTree);
 
         //Check that the node path is removed from pTrie
-        Assert.assertEquals("/bug is still in pTrie", "", pTrie.findMaxPrefix("/bug"));       
+        Assert.assertEquals("/bug is still in pTrie", "", pTrie.findMaxPrefix("/bug"));
     }
 
     /*
@@ -200,29 +202,34 @@ public class DataTreeTest extends ZKTestCase {
         BinaryOutputArchive oa = new BinaryOutputArchive(out) {
             @Override
             public void writeRecord(Record r, String tag) throws IOException {
-                DataNode node = (DataNode) r;
-                if (node.data.length == 1 && node.data[0] == 42) {
-                    final Semaphore semaphore = new Semaphore(0);
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            synchronized (markerNode) {
-                                //When we lock markerNode, allow writeRecord to continue
-                                semaphore.release();
+                // Need check if the record is a DataNode instance because of changes in ZOOKEEPER-2014
+                // which adds default ACL to config node.
+                if (r instanceof DataNode) {
+                    DataNode node = (DataNode) r;
+                    if (node.data.length == 1 && node.data[0] == 42) {
+                        final Semaphore semaphore = new Semaphore(0);
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                synchronized (markerNode) {
+                                    //When we lock markerNode, allow writeRecord to continue
+                                    semaphore.release();
+                                }
                             }
-                        }
-                    }).start();
+                        }).start();
 
-                    try {
-                        boolean acquired = semaphore.tryAcquire(30, TimeUnit.SECONDS);
-                        //This is the real assertion - could another thread lock
-                        //the DataNode we're currently writing
-                        Assert.assertTrue("Couldn't acquire a lock on the DataNode while we were calling tree.serialize", acquired);
-                    } catch (InterruptedException e1) {
-                        throw new RuntimeException(e1);
+                        try {
+                            boolean acquired = semaphore.tryAcquire(30, TimeUnit.SECONDS);
+                            //This is the real assertion - could another thread lock
+                            //the DataNode we're currently writing
+                            Assert.assertTrue("Couldn't acquire a lock on the DataNode while we were calling tree.serialize", acquired);
+                        } catch (InterruptedException e1) {
+                            throw new RuntimeException(e1);
+                        }
+                        ranTestCase.set(true);
                     }
-                    ranTestCase.set(true);
                 }
+
                 super.writeRecord(r, tag);
             }
         };
@@ -231,5 +238,47 @@ public class DataTreeTest extends ZKTestCase {
 
         //Let's make sure that we hit the code that ran the real assertion above
         Assert.assertTrue("Didn't find the expected node", ranTestCase.get());
+    }
+
+    @Test(timeout = 60000)
+    public void testReconfigACLClearOnDeserialize() throws Exception {
+
+        DataTree tree = new DataTree();
+        // simulate the upgrading scenario, where the reconfig znode
+        // doesn't exist and the acl cache is empty
+        tree.deleteNode(ZooDefs.CONFIG_NODE, 1);
+        tree.getReferenceCountedAclCache().aclIndex = 0;
+
+        Assert.assertEquals(
+            "expected to have 1 acl in acl cache map", 0, tree.aclCacheSize());
+
+        // serialize the data with one znode with acl
+        tree.createNode(
+            "/bug", new byte[20], ZooDefs.Ids.OPEN_ACL_UNSAFE, -1, 1, 1, 1);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        BinaryOutputArchive oa = BinaryOutputArchive.getArchive(baos);
+        tree.serialize(oa, "test");
+        baos.flush();
+
+        ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
+        BinaryInputArchive ia = BinaryInputArchive.getArchive(bais);
+        tree.deserialize(ia, "test");
+
+        Assert.assertEquals(
+            "expected to have 1 acl in acl cache map", 1, tree.aclCacheSize());
+        Assert.assertEquals(
+            "expected to have the same acl", ZooDefs.Ids.OPEN_ACL_UNSAFE,
+            tree.getACL("/bug", new Stat()));
+
+        // simulate the upgrading case where the config node will be created
+        // again after leader election
+        tree.addConfigNode();
+
+        Assert.assertEquals(
+            "expected to have 2 acl in acl cache map", 2, tree.aclCacheSize());
+        Assert.assertEquals(
+            "expected to have the same acl", ZooDefs.Ids.OPEN_ACL_UNSAFE,
+            tree.getACL("/bug", new Stat()));
     }
 }

@@ -67,7 +67,7 @@
 <a class="unselected" href="https://cwiki.apache.org/confluence/display/ZOOKEEPER/">Wiki</a>
 </li>
 <li class="current">
-<a class="selected" href="index.html">ZooKeeper 3.4 Documentation</a>
+<a class="selected" href="index.html">ZooKeeper 3.5 Documentation</a>
 </li>
 </ul>
 <!--+
@@ -135,23 +135,8 @@ document.write("Last Published: " + document.lastModified);
 <a href="recipes.html">Recipes</a>
 </div>
 </div>
-<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">BookKeeper</div>
+<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">Admin &amp; Ops</div>
 <div id="menu_1.3" class="menuitemgroup">
-<div class="menuitem">
-<a href="bookkeeperStarted.html">Getting started</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperOverview.html">Overview</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperConfig.html">Setup guide</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperProgrammer.html">Programmer's guide</a>
-</div>
-</div>
-<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Admin &amp; Ops</div>
-<div id="menu_1.4" class="menuitemgroup">
 <div class="menuitem">
 <a href="zookeeperAdmin.html">Administrator's Guide</a>
 </div>
@@ -164,15 +149,18 @@ document.write("Last Published: " + document.lastModified);
 <div class="menuitem">
 <a href="zookeeperObservers.html">Observers Guide</a>
 </div>
+<div class="menuitem">
+<a href="zookeeperReconfig.html">Dynamic Reconfiguration</a>
 </div>
-<div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Contributor</div>
-<div id="menu_1.5" class="menuitemgroup">
+</div>
+<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Contributor</div>
+<div id="menu_1.4" class="menuitemgroup">
 <div class="menuitem">
 <a href="zookeeperInternals.html">ZooKeeper Internals</a>
 </div>
 </div>
-<div onclick="SwitchMenu('menu_1.6', 'skin/')" id="menu_1.6Title" class="menutitle">Miscellaneous</div>
-<div id="menu_1.6" class="menuitemgroup">
+<div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Miscellaneous</div>
+<div id="menu_1.5" class="menuitemgroup">
 <div class="menuitem">
 <a href="https://cwiki.apache.org/confluence/display/ZOOKEEPER">Wiki</a>
 </div>
@@ -396,14 +384,14 @@ a boolean flag that enables the process to set a watch. In the code the flag is 
 </pre>
 <p>
 Note that enter() throws both KeeperException and InterruptedException, so it is 
-the reponsability of the application to catch and handle such exceptions.</p>
+the responsibility of the application to catch and handle such exceptions.</p>
 <p>
 Once the computation is finished, a process calls leave() to leave the barrier. 
 First it deletes its corresponding node, and then it gets the children of the root 
 node. If there is at least one child, then it waits for a notification (obs: note 
 that the second parameter of the call to getChildren() is true, meaning that 
 ZooKeeper has to set a watch on the the root node). Upon reception of a notification, 
-it checks once more whether the root node has any child.</p>
+it checks once more whether the root node has any children.</p>
 <pre class="code">
         /**
          * Wait until all reach barrier
@@ -434,7 +422,7 @@ it checks once more whether the root node has any child.</p>
 <h2 class="h3">Producer-Consumer Queues</h2>
 <div class="section">
 <p>
-A producer-consumer queue is a distributed data estructure thata group of processes 
+A producer-consumer queue is a distributed data structure that groups of processes 
 use to generate and consume items. Producer processes create new elements and add 
 them to the queue. Consumer processes remove elements from the list, and process them. 
 In this implementation, the elements are simple integers. The queue is represented 

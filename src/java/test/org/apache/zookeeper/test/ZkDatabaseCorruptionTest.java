@@ -25,12 +25,11 @@ import java.util.Arrays;
 
 import org.apache.zookeeper.AsyncCallback;
 import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZKTestCase;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.server.SyncRequestProcessor;
+import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.QuorumPeer.ServerState;
@@ -40,6 +39,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.assertEquals;
 
 public class ZkDatabaseCorruptionTest extends ZKTestCase {
     protected static final Logger LOG = LoggerFactory.getLogger(ZkDatabaseCorruptionTest.class);
@@ -84,9 +85,7 @@ public class ZkDatabaseCorruptionTest extends ZKTestCase {
     public void testCorruption() throws Exception {
         ClientBase.waitForServerUp(qb.hostPort, 10000);
         ClientBase.waitForServerUp(qb.hostPort, 10000);
-        ZooKeeper zk = new ZooKeeper(qb.hostPort, 10000, new Watcher() {
-            public void process(WatchedEvent event) {
-            }});
+        ZooKeeper zk = ClientBase.createZKClient(qb.hostPort, 10000);
         SyncRequestProcessor.setSnapCount(100);
         for (int i = 0; i < 2000; i++) {
             zk.create("/0-" + i, new byte[0], ZooDefs.Ids.OPEN_ACL_UNSAFE,
@@ -157,5 +156,15 @@ public class ZkDatabaseCorruptionTest extends ZKTestCase {
         if (leaderSid != 5)QuorumBase.shutdown(qb.s5);
     }
 
+    @Test
+    public void testAbsentRecentSnapshot() throws IOException {
+        ZKDatabase zkDatabase = new ZKDatabase(new FileTxnSnapLog(new File("foo"), new File("bar")){
+            @Override
+            public File findMostRecentSnapshot() throws IOException {
+                return null;
+            }
+        });
+        assertEquals(0, zkDatabase.calculateTxnLogSizeLimit());
+    }
 
 }

@@ -21,21 +21,19 @@ package org.apache.zookeeper.test;
 import java.io.IOException;
 
 import org.apache.zookeeper.TestableZooKeeper;
-import org.apache.zookeeper.server.ServerCnxn;
+import org.apache.zookeeper.common.X509Exception.SSLContextException;
+
 import static org.apache.zookeeper.client.FourLetterWordMain.send4LetterWord;
+
+import org.apache.zookeeper.server.command.FourLetterCommands;
 import org.junit.Assert;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class FourLetterWordsWhiteListTest extends ClientBase {
     protected static final Logger LOG =
-        LoggerFactory.getLogger(FourLetterWordsTest.class);
-
-    @Rule
-    public Timeout timeout = new Timeout(30000);
+        LoggerFactory.getLogger(FourLetterWordsWhiteListTest.class);
 
     /*
      * ZOOKEEPER-2693: test white list of four letter words.
@@ -46,7 +44,7 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
     @Test(timeout=30000)
     public void testFourLetterWordsAllDisabledByDefault() throws Exception {
         stopServer();
-        ServerCnxn.resetWhiteList();
+        FourLetterCommands.resetWhiteList();
         System.setProperty("zookeeper.4lw.commands.whitelist", "stat");
         startServer();
 
@@ -70,7 +68,7 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
     @Test(timeout=30000)
     public void testFourLetterWordsEnableSomeCommands() throws Exception {
         stopServer();
-        ServerCnxn.resetWhiteList();
+        FourLetterCommands.resetWhiteList();
         System.setProperty("zookeeper.4lw.commands.whitelist", "stat, ruok, isro");
         startServer();
         // stat, ruok and isro are white listed.
@@ -82,6 +80,7 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
         verifyExactMatch("conf", generateExpectedMessage("conf"));
         verifyExactMatch("cons", generateExpectedMessage("cons"));
         verifyExactMatch("crst", generateExpectedMessage("crst"));
+        verifyExactMatch("dirs", generateExpectedMessage("dirs"));
         verifyExactMatch("dump", generateExpectedMessage("dump"));
         verifyExactMatch("envi", generateExpectedMessage("envi"));
         verifyExactMatch("gtmk", generateExpectedMessage("gtmk"));
@@ -96,7 +95,7 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
     @Test(timeout=30000)
     public void testISROEnabledWhenReadOnlyModeEnabled() throws Exception {
         stopServer();
-        ServerCnxn.resetWhiteList();
+        FourLetterCommands.resetWhiteList();
         System.setProperty("zookeeper.4lw.commands.whitelist", "stat");
         System.setProperty("readonlymode.enabled", "true");
         startServer();
@@ -107,7 +106,7 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
     @Test(timeout=30000)
     public void testFourLetterWordsInvalidConfiguration() throws Exception {
         stopServer();
-        ServerCnxn.resetWhiteList();
+        FourLetterCommands.resetWhiteList();
         System.setProperty("zookeeper.4lw.commands.whitelist", "foo bar" +
                 " foo,,, " +
                 "bar :.,@#$%^&*() , , , , bar, bar, stat,        ");
@@ -122,7 +121,7 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
     @Test(timeout=30000)
     public void testFourLetterWordsEnableAllCommandsThroughAsterisk() throws Exception {
         stopServer();
-        ServerCnxn.resetWhiteList();
+        FourLetterCommands.resetWhiteList();
         System.setProperty("zookeeper.4lw.commands.whitelist", "*");
         startServer();
         verifyAllCommandsSuccess();
@@ -131,14 +130,15 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
     @Test(timeout=30000)
     public void testFourLetterWordsEnableAllCommandsThroughExplicitList() throws Exception {
         stopServer();
-        ServerCnxn.resetWhiteList();
+        FourLetterCommands.resetWhiteList();
         System.setProperty("zookeeper.4lw.commands.whitelist",
                 "ruok, envi, conf, stat, srvr, cons, dump," +
                         "wchs, wchp, wchc, srst, crst, " +
-                        "mntr, gtmk, isro, stmk");
+                        "dirs, mntr, gtmk, isro, stmk");
         startServer();
         verifyAllCommandsSuccess();
     }
+
 
     private void verifyAllCommandsSuccess() throws Exception {
         verifyExactMatch("ruok", "imok");
@@ -168,6 +168,7 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
         verifyFuzzyMatch("srvr", "Outstanding");
         verifyFuzzyMatch("cons", sid);
         verifyFuzzyMatch("dump", sid);
+        verifyFuzzyMatch("dirs", "size");
 
         zk.getData("/", true, null);
 
@@ -179,6 +180,7 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
         verifyFuzzyMatch("wchs", "watching 1");
         verifyFuzzyMatch("wchp", sid);
         verifyFuzzyMatch("wchc", sid);
+        verifyFuzzyMatch("dirs", "size");
         zk.close();
 
         verifyExactMatch("ruok", "imok");
@@ -200,9 +202,9 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
         verifyFuzzyMatch("cons", "queued");
         verifyFuzzyMatch("mntr", "zk_server_state\tstandalone");
         verifyFuzzyMatch("mntr", "num_alive_connections");
-        verifyFuzzyMatch("mntr", "fsync_threshold_exceed_count");
         verifyFuzzyMatch("stat", "Connections");
         verifyFuzzyMatch("srvr", "Connections");
+        verifyFuzzyMatch("dirs", "size");
     }
 
     private void verifyAllCommandsFail() throws Exception {
@@ -210,6 +212,7 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
         verifyExactMatch("conf", generateExpectedMessage("conf"));
         verifyExactMatch("cons", generateExpectedMessage("cons"));
         verifyExactMatch("crst", generateExpectedMessage("crst"));
+        verifyExactMatch("dirs", generateExpectedMessage("dirs"));
         verifyExactMatch("dump", generateExpectedMessage("dump"));
         verifyExactMatch("envi", generateExpectedMessage("envi"));
         verifyExactMatch("gtmk", generateExpectedMessage("gtmk"));
@@ -225,7 +228,12 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
         verifyFuzzyMatch("srvr", "Outstanding");
     }
 
-    private void verifyFuzzyMatch(String cmd, String expected) throws IOException {
+    private String sendRequest(String cmd) throws IOException, SSLContextException {
+      HostPort hpobj = ClientBase.parseHostPortList(hostPort).get(0);
+      return send4LetterWord(hpobj.host, hpobj.port, cmd);
+    }
+
+    private void verifyFuzzyMatch(String cmd, String expected) throws IOException, SSLContextException {
         String resp = sendRequest(cmd);
         LOG.info("cmd " + cmd + " expected " + expected + " got " + resp);
         Assert.assertTrue(resp.contains(expected));
@@ -235,19 +243,9 @@ public class FourLetterWordsWhiteListTest extends ClientBase {
         return command + " is not executed because it is not in the whitelist.";
     }
 
-    private void verifyExactMatch(String cmd, String expected) throws IOException {
+    private void verifyExactMatch(String cmd, String expected) throws IOException, SSLContextException {
         String resp = sendRequest(cmd);
         LOG.info("cmd " + cmd + " expected an exact match of " + expected + "; got " + resp);
         Assert.assertTrue(resp.trim().equals(expected));
-    }
-
-    private String sendRequest(String cmd) throws IOException {
-      HostPort hpobj = ClientBase.parseHostPortList(hostPort).get(0);
-      return send4LetterWord(hpobj.host, hpobj.port, cmd);
-    }
-
-    private String sendRequest(String cmd, int timeout) throws IOException {
-        HostPort hpobj = ClientBase.parseHostPortList(hostPort).get(0);
-        return send4LetterWord(hpobj.host, hpobj.port, cmd, timeout);
     }
 }

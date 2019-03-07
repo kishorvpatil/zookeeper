@@ -21,13 +21,14 @@ package org.apache.zookeeper.server;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.io.IOException;
+import org.apache.zookeeper.server.NIOServerCnxnFactory.SelectorThread;
 
 public class MockNIOServerCnxn extends NIOServerCnxn {
 
     public MockNIOServerCnxn(ZooKeeperServer zk, SocketChannel sock,
-                         SelectionKey sk, NIOServerCnxnFactory factory)
-                         throws IOException {
-        super(zk, sock, sk, factory);
+                         SelectionKey sk, NIOServerCnxnFactory factory,
+                         SelectorThread selectorThread) throws IOException {
+        super(zk, sock, sk, factory, selectorThread);
     }
 
     /**
@@ -37,9 +38,8 @@ public class MockNIOServerCnxn extends NIOServerCnxn {
         super.doIO(k);
     }
 
-     @Override
-     protected boolean isSocketOpen() {
-         return true;
-     }
-
+    @Override
+    protected boolean isSocketOpen() {
+        return true;
+    }
 }

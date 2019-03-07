@@ -18,6 +18,7 @@
 
 package org.apache.zookeeper.test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -34,6 +35,8 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.common.Time;
 import org.apache.zookeeper.data.Stat;
+import org.apache.zookeeper.server.ServerCnxnFactory;
+import org.apache.zookeeper.server.ZooKeeperServer;
 import org.junit.Assert;
 
 public class ZooKeeperTestClient extends ZKTestCase implements Watcher {
@@ -289,7 +292,7 @@ public class ZooKeeperTestClient extends ZKTestCase implements Watcher {
     System.out.println("session id of zk_1: " + zk_1.getSessionId());
     zk.close();
 
-    Stat no_stat = zk_1.exists("nosuchnode", false);
+    zk_1.exists("nosuchnode", false);
 
     event = this.getEvent(10);
     if (event == null) {
@@ -395,11 +398,53 @@ public class ZooKeeperTestClient extends ZKTestCase implements Watcher {
     zk.close();
   }
 
+  private void deleteNodeIfExists(ZooKeeper zk, String nodeName)
+      throws InterruptedException {
+    try {
+      zk.delete(nodeName, -1);
+    } catch (KeeperException ke) {
+      Code code = ke.code();
+      boolean valid = code == KeeperException.Code.NONODE ||
+                      code == KeeperException.Code.NOTEMPTY;
+      if (!valid) {
+        Assert.fail("Unexpected exception code for delete: " + ke.getMessage());
+      }
+    }
+  }
+
+  private void create_get_stat_test()
+      throws IOException, InterruptedException, KeeperException {
+    checkRoot();
+    ZooKeeper zk = new ZooKeeper(hostPort, 10000, this);
+    String parentName = testDirOnZK;
+    String nodeName = parentName + "/create_with_stat_tmp";
+    deleteNodeIfExists(zk, nodeName);
+    deleteNodeIfExists(zk, nodeName + "_2");
+    Stat stat = new Stat();
+    zk.create(nodeName, null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT,
+        stat);
+    Assert.assertNotNull(stat);
+    Assert.assertTrue(stat.getCzxid() > 0);
+    Assert.assertTrue(stat.getCtime() > 0);
+
+    Stat stat2 = new Stat();
+    zk.create(nodeName + "_2", null, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT,
+        stat2);
+    Assert.assertNotNull(stat2);
+    Assert.assertTrue(stat2.getCzxid() > stat.getCzxid());
+    Assert.assertTrue(stat2.getCtime() > stat.getCtime());
+
+    deleteNodeIfExists(zk, nodeName);
+    deleteNodeIfExists(zk, nodeName + "_2");
+    zk.close();
+  }
+
   public void my_test_1() throws IOException,
           InterruptedException, KeeperException {
     enode_test_1();
     enode_test_2();
     delete_create_get_set_test_1();
+    create_get_stat_test();
   }
 
   synchronized public void process(WatchedEvent event) {

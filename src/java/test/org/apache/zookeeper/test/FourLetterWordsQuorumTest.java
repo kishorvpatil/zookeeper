@@ -23,7 +23,10 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.zookeeper.TestableZooKeeper;
+import org.apache.zookeeper.common.X509Exception.SSLContextException;
+
 import static org.apache.zookeeper.client.FourLetterWordMain.send4LetterWord;
+
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -61,6 +64,7 @@ public class FourLetterWordsQuorumTest extends QuorumBase {
             verify(hp, "srvr", "Outstanding");
             verify(hp, "cons", sid);
             verify(hp, "dump", sid);
+            verify(hp, "dirs", "size");
 
             zk.getData("/", true, null);
 
@@ -71,6 +75,7 @@ public class FourLetterWordsQuorumTest extends QuorumBase {
             verify(hp, "wchs", "watching 1");
             verify(hp, "wchp", sid);
             verify(hp, "wchc", sid);
+            verify(hp, "dirs", "size");
 
             zk.close();
 
@@ -84,6 +89,7 @@ public class FourLetterWordsQuorumTest extends QuorumBase {
             verify(hp, "wchs", "watch");
             verify(hp, "wchp", "");
             verify(hp, "wchc", "");
+            verify(hp, "dirs", "size");
 
             verify(hp, "srst", "reset");
             verify(hp, "crst", "reset");
@@ -97,7 +103,7 @@ public class FourLetterWordsQuorumTest extends QuorumBase {
     }
 
     private void verify(String hp, String cmd, String expected)
-        throws IOException
+        throws IOException, SSLContextException
     {
         for(HostPort hpobj: parseHostPortList(hp)) {
             String resp = send4LetterWord(hpobj.host, hpobj.port, cmd);
