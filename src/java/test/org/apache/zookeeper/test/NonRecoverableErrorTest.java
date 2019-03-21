@@ -59,14 +59,16 @@ public class NonRecoverableErrorTest extends QuorumPeerTestBase {
         for (int i = 0; i < SERVER_COUNT; i++) {
             clientPorts[i] = PortAssignment.unique();
             server = "server." + i + "=127.0.0.1:" + PortAssignment.unique()
-                    + ":" + PortAssignment.unique();
+                    + ":" + PortAssignment.unique() + ":participant;127.0.0.1:"
+                    + clientPorts[i];
             sb.append(server + "\n");
         }
         String currentQuorumCfgSection = sb.toString();
         MainThread mt[] = new MainThread[SERVER_COUNT];
 
         for (int i = 0; i < SERVER_COUNT; i++) {
-            mt[i] = new MainThread(i, clientPorts[i], currentQuorumCfgSection);
+            mt[i] = new MainThread(i, clientPorts[i], currentQuorumCfgSection,
+                    false);
             mt[i].start();
         }
 
@@ -160,8 +162,8 @@ public class NonRecoverableErrorTest extends QuorumPeerTestBase {
             }
             count--;
         }
-        Assert.assertTrue("New LE cycle must have triggered",
-                leaderCurrentEpoch != peer.getCurrentEpoch());
+        Assert.assertNotEquals("New LE cycle must have triggered",
+                leaderCurrentEpoch, peer.getCurrentEpoch());
     }
 
     private QuorumPeer getLeaderQuorumPeer(MainThread[] mt) {

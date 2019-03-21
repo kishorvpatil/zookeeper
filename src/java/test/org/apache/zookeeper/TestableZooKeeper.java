@@ -25,10 +25,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.jute.Record;
+import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.apache.zookeeper.proto.ReplyHeader;
 import org.apache.zookeeper.proto.RequestHeader;
 
-public class TestableZooKeeper extends ZooKeeper {
+public class TestableZooKeeper extends ZooKeeperAdmin {
 
     public TestableZooKeeper(String host, int sessionTimeout,
             Watcher watcher) throws IOException {
@@ -94,12 +95,6 @@ public class TestableZooKeeper extends ZooKeeper {
             e.printStackTrace();
             return false;
         }
-    }
-    
-    public boolean testableWaitForShutdown(int wait)
-        throws InterruptedException
-    {
-        return super.testableWaitForShutdown(wait);
     }
 
     public SocketAddress testableLocalSocketAddress() {

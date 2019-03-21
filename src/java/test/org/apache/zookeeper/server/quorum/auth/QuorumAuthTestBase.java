@@ -66,11 +66,10 @@ public class QuorumAuthTestBase extends ZKTestCase {
     }
 
     protected String startQuorum(final int serverCount,
-            Map<String, String> authConfigs, int authServerCount,
-            boolean delayedServerStartup) throws IOException {
+            Map<String, String> authConfigs, int authServerCount) throws IOException {
         StringBuilder connectStr = new StringBuilder();
-        final int[] clientPorts = startQuorum(serverCount, 0, connectStr,
-                authConfigs, authServerCount, delayedServerStartup);
+        final int[] clientPorts = startQuorum(serverCount, connectStr,
+                authConfigs, authServerCount);
         for (int i = 0; i < serverCount; i++) {
             Assert.assertTrue("waiting for server " + i + " being up",
                     ClientBase.waitForServerUp("127.0.0.1:" + clientPorts[i],
@@ -79,76 +78,15 @@ public class QuorumAuthTestBase extends ZKTestCase {
         return connectStr.toString();
     }
 
-    /**
-     * Starts the given number of quorum servers and will wait for the quorum
-     * formation.
-     *
-     * @param serverCount
-     *            total server count includes participants + observers
-     * @param observerCount
-     *            number of observers
-     * @param authConfigs
-     *            configuration parameters for authentication
-     * @param authServerCount
-     *            number of auth enabled servers
-     * @return client port for the respective servers
-     * @throws IOException
-     */
-    protected String startQuorum(final int serverCount, int observerCount,
-            Map<String, String> authConfigs, int authServerCount)
-                    throws IOException {
-        StringBuilder connectStr = new StringBuilder();
-        final int[] clientPorts = startQuorum(serverCount, observerCount,
-                connectStr, authConfigs, authServerCount, false);
-        for (int i = 0; i < serverCount; i++) {
-            Assert.assertTrue("waiting for server " + i + " being up",
-                    ClientBase.waitForServerUp("127.0.0.1:" + clientPorts[i],
-                            ClientBase.CONNECTION_TIMEOUT));
-        }
-        return connectStr.toString();
-    }
-
-    /**
-     * Starts the given number of quorum servers and won't wait for the quorum
-     * formation.
-     *
-     * @param serverCount
-     *            total server count includes participants + observers
-     * @param observerCount
-     *            number of observers
-     * @param connectStr
-     *            connection string where clients can used for connection
-     *            establishment
-     * @param authConfigs
-     *            configuration parameters for authentication
-     * @param authServerCount
-     *            number of auth enabled servers
-     * @param delayedServerStartup
-     *            true flag value to add delay between server's startup, false otherwise.
-     * @return client port for the respective servers
-     * @throws IOException
-     */
-    protected int[] startQuorum(final int serverCount, int observerCount,
-            StringBuilder connectStr, Map<String, String> authConfigs,
-            int authServerCount, boolean delayedServerStartup)
-                    throws IOException {
+    protected int[] startQuorum(final int serverCount, StringBuilder connectStr,
+            Map<String, String> authConfigs, int authServerCount) throws IOException {
         final int clientPorts[] = new int[serverCount];
         StringBuilder sb = new StringBuilder();
-
-        // If there are any Observers then the Observer server details will be
-        // placed first in the configuration section.
         for (int i = 0; i < serverCount; i++) {
             clientPorts[i] = PortAssignment.unique();
-            String server = "";
-            if (observerCount > 0 && i < observerCount) {
-                // add observer learner type
-                server = String.format("server.%d=localhost:%d:%d:observer",
-                        i, PortAssignment.unique(), PortAssignment.unique());
-            } else {
-                // add participant learner type
-                server = String.format("server.%d=localhost:%d:%d:participant",
-                        i, PortAssignment.unique(), PortAssignment.unique());
-            }
+            String server = String.format(
+                    "server.%d=localhost:%d:%d:participant", i,
+                    PortAssignment.unique(), PortAssignment.unique());
             sb.append(server + "\n");
             connectStr.append("127.0.0.1:" + clientPorts[i]);
             if (i < serverCount - 1) {
@@ -159,64 +97,24 @@ public class QuorumAuthTestBase extends ZKTestCase {
         // servers with authentication interfaces configured
         int i = 0;
         for (; i < authServerCount; i++) {
-            if (observerCount > 0 && i < observerCount) {
-                String obsCfgSection = quorumCfg + "\npeerType=observer";
-                quorumCfg = obsCfgSection;
-            }
-            startServer(authConfigs, clientPorts[i], quorumCfg, i, delayedServerStartup);
+            startServer(authConfigs, clientPorts, quorumCfg, i);
         }
         // servers without any authentication configured
         for (int j = 0; j < serverCount - authServerCount; j++, i++) {
-            if (observerCount > 0 && i < observerCount) {
-                String obsCfgSection = quorumCfg + "\npeerType=observer";
-                quorumCfg = obsCfgSection;
-            }
-            startServer(null, clientPorts[i], quorumCfg, i, delayedServerStartup);
+            MainThread mthread = new MainThread(i, clientPorts[i], quorumCfg);
+            mt.add(mthread);
+            mthread.start();
         }
         return clientPorts;
     }
 
     private void startServer(Map<String, String> authConfigs,
-            final int clientPort, String quorumCfg, int i,
-            boolean delayedServerStartup) throws IOException {
-        MainThread mthread;
-        if (authConfigs != null) {
-            mthread = new MainThread(i, clientPort, quorumCfg, authConfigs);
-        } else {
-            mthread = new MainThread(i, clientPort, quorumCfg);
-        }
+            final int[] clientPorts, String quorumCfg, int i)
+                    throws IOException {
+        MainThread mthread = new MainThread(i, clientPorts[i], quorumCfg,
+                authConfigs);
         mt.add(mthread);
         mthread.start();
-
-        if (delayedServerStartup) {
-            addDelayBeforeStartingNextServer(mthread);
-        }
-    }
-
-    private void addDelayBeforeStartingNextServer(MainThread mThread) {
-        // Refer https://issues.apache.org/jira/browse/ZOOKEEPER-2712
-        LOG.info("Waiting to finish login context init(Krb login), "
-                + "as there are potential concurrency issues in ApacheDS "
-                + "if multiple servers starts together!");
-        int retries = 60; // 15secs delay
-        while (retries > 0) {
-            if (mThread.getQuorumPeer() != null
-                    && mThread.getQuorumPeer().hasAuthInitialized()) {
-                try {
-                    Thread.sleep(1000); // adding 1sec grace period.
-                } catch (InterruptedException e) {
-                    LOG.info("Ignore InterruptedException");
-                }
-                break;
-            }
-            // moving to next retry cycle
-            retries--;
-            try {
-                Thread.sleep(250);
-            } catch (InterruptedException e) {
-                LOG.info("Ignore InterruptedException");
-            }
-        }
     }
 
     protected void startServer(MainThread restartPeer,

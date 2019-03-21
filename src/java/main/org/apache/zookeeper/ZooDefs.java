@@ -27,8 +27,10 @@ import org.apache.zookeeper.data.Id;
 
 @InterfaceAudience.Public
 public class ZooDefs {
+   
+   final public static String CONFIG_NODE = "/zookeeper/config";
 
-    @InterfaceAudience.Public
+   @InterfaceAudience.Public
     public interface OpCode {
         public final int notification = 0;
 
@@ -57,6 +59,20 @@ public class ZooDefs {
         public final int check = 13;
 
         public final int multi = 14;
+        
+        public final int create2 = 15;
+
+        public final int reconfig = 16;
+
+        public final int checkWatches = 17;
+
+        public final int removeWatches = 18;
+
+        public final int createContainer = 19;
+
+        public final int deleteContainer = 20;
+
+        public final int createTTL = 21;
 
         public final int auth = 100;
 
@@ -121,5 +137,5 @@ public class ZooDefs {
 
     final public static String[] opNames = { "notification", "create",
             "delete", "exists", "getData", "setData", "getACL", "setACL",
-            "getChildren", "getChildren2", "getMaxChildren", "setMaxChildren", "ping" };
+            "getChildren", "getChildren2", "getMaxChildren", "setMaxChildren", "ping", "reconfig", "getConfig" };
 }

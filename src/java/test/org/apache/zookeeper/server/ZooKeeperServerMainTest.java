@@ -24,29 +24,24 @@ import static org.junit.Assert.fail;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.jute.Record;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.PortAssignment;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZKTestCase;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.proto.ReplyHeader;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
+import org.apache.zookeeper.ZooDefs.Ids;
+import org.apache.zookeeper.common.PathUtils;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.apache.zookeeper.server.persistence.Util;
-import org.apache.zookeeper.server.util.ZxidUtils;
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.apache.zookeeper.test.ClientBase;
-import org.apache.zookeeper.txn.SetDataTxn;
-import org.apache.zookeeper.txn.TxnHeader;
-import org.jboss.netty.channel.Channel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -58,6 +53,8 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
     protected static final Logger LOG =
         LoggerFactory.getLogger(ZooKeeperServerMainTest.class);
 
+    private CountDownLatch clientConnected = new CountDownLatch(1);
+
     public static class MainThread extends Thread {
         final File confFile;
         final TestZKSMain main;
@@ -65,19 +62,24 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
         final File dataDir;
         final File logDir;
 
-        public MainThread(int clientPort, boolean preCreateDirs) throws IOException {
-            this(clientPort, preCreateDirs, ClientBase.createTmpDir());
+        public MainThread(int clientPort, boolean preCreateDirs, String configs)
+                throws IOException {
+            this(clientPort, preCreateDirs, ClientBase.createTmpDir(), configs);
         }
 
-        public MainThread(int clientPort, boolean preCreateDirs, File tmpDir) throws IOException {
+        public MainThread(int clientPort, boolean preCreateDirs, File tmpDir, String configs)
+                throws IOException {
             super("Standalone server with clientPort:" + clientPort);
             this.tmpDir = tmpDir;
-            confFile = new File(this.tmpDir, "zoo.cfg");
+            confFile = new File(tmpDir, "zoo.cfg");
 
             FileWriter fwriter = new FileWriter(confFile);
             fwriter.write("tickTime=2000\n");
             fwriter.write("initLimit=10\n");
             fwriter.write("syncLimit=5\n");
+            if(configs != null){
+                fwriter.write(configs);
+            }
 
             dataDir = new File(this.tmpDir, "data");
             logDir = new File(dataDir.toString() + "_txnlog");
@@ -89,18 +91,11 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
                     throw new IOException("unable to mkdir " + logDir);
                 }
             }
-
-            String dataDirPath = dataDir.toString();
-            String logDirPath = logDir.toString();
-
-            // Convert windows path to UNIX to avoid problems with "\"
-            String osname = java.lang.System.getProperty("os.name");
-            if (osname.toLowerCase().contains("windows")) {
-                dataDirPath = dataDirPath.replace('\\', '/');
-                logDirPath = logDirPath.replace('\\', '/');
-            }
-            fwriter.write("dataDir=" + dataDirPath + "\n");
-            fwriter.write("dataLogDir=" + logDirPath + "\n");
+            
+            String normalizedDataDir = PathUtils.normalizeFileSystemPath(dataDir.toString());
+            String normalizedLogDir = PathUtils.normalizeFileSystemPath(logDir.toString());
+            fwriter.write("dataDir=" + normalizedDataDir + "\n");
+            fwriter.write("dataLogDir=" + normalizedLogDir + "\n");
             fwriter.write("clientPort=" + clientPort + "\n");
             fwriter.flush();
             fwriter.close();
@@ -153,7 +148,7 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
     /**
      * Test case for https://issues.apache.org/jira/browse/ZOOKEEPER-2247.
      * Test to verify that even after non recoverable error (error while
-     * writing transaction log) on ZooKeeper service will be available
+     * writing transaction log), ZooKeeper is still available.
      */
     @Test(timeout = 30000)
     public void testNonRecoverableError() throws Exception {
@@ -161,7 +156,7 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
 
         final int CLIENT_PORT = PortAssignment.unique();
 
-        MainThread main = new MainThread(CLIENT_PORT, true);
+        MainThread main = new MainThread(CLIENT_PORT, true, null);
         main.start();
 
         Assert.assertTrue("waiting for server being up",
@@ -220,7 +215,7 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
 
         // Start up the ZK server to automatically create the necessary directories
         // and capture the directory where data is stored
-        MainThread main = new MainThread(CLIENT_PORT, true);
+        MainThread main = new MainThread(CLIENT_PORT, true, null);
         File tmpDir = main.tmpDir;
         main.start();
         Assert.assertTrue("waiting for server being up", ClientBase
@@ -233,7 +228,7 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
         snapDir.setWritable(false);
 
         // Restart ZK and observe a failure
-        main = new MainThread(CLIENT_PORT, false, tmpDir);
+        main = new MainThread(CLIENT_PORT, false, tmpDir, null);
         main.start();
 
         Assert.assertFalse("waiting for server being up", ClientBase
@@ -260,7 +255,7 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
 
         // Start up the ZK server to automatically create the necessary directories
         // and capture the directory where data is stored
-        MainThread main = new MainThread(CLIENT_PORT, true);
+        MainThread main = new MainThread(CLIENT_PORT, true, null);
         File tmpDir = main.tmpDir;
         main.start();
         Assert.assertTrue("waiting for server being up", ClientBase
@@ -273,7 +268,7 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
         logDir.setWritable(false);
 
         // Restart ZK and observe a failure
-        main = new MainThread(CLIENT_PORT, false, tmpDir);
+        main = new MainThread(CLIENT_PORT, false, tmpDir, null);
         main.start();
 
         Assert.assertFalse("waiting for server being up", ClientBase
@@ -296,16 +291,18 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
 
         final int CLIENT_PORT = PortAssignment.unique();
 
-        MainThread main = new MainThread(CLIENT_PORT, true);
+        MainThread main = new MainThread(CLIENT_PORT, true, null);
         main.start();
 
         Assert.assertTrue("waiting for server being up",
                 ClientBase.waitForServerUp("127.0.0.1:" + CLIENT_PORT,
                         CONNECTION_TIMEOUT));
 
-
+        clientConnected = new CountDownLatch(1);
         ZooKeeper zk = new ZooKeeper("127.0.0.1:" + CLIENT_PORT,
                 ClientBase.CONNECTION_TIMEOUT, this);
+        Assert.assertTrue("Failed to establish zkclient connection!",
+                clientConnected.await(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS));
 
         zk.create("/foo", "foobar".getBytes(), Ids.OPEN_ACL_UNSAFE,
                 CreateMode.PERSISTENT);
@@ -322,14 +319,42 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
     }
 
     /**
-     * Test verifies the auto creation of data dir and data log dir.
+     * Test verifies server should fail when data dir or data log dir doesn't
+     * exists. Sets "zookeeper.datadir.autocreate" to false.
      */
     @Test(timeout = 30000)
-    public void testAutoCreateDataLogDir() throws Exception {
+    public void testWithoutAutoCreateDataLogDir() throws Exception {
         ClientBase.setupTestEnv();
+        System.setProperty(FileTxnSnapLog.ZOOKEEPER_DATADIR_AUTOCREATE, "false");
+        try {
+            final int CLIENT_PORT = PortAssignment.unique();
+
+            MainThread main = new MainThread(CLIENT_PORT, false, null);
+            String args[] = new String[1];
+            args[0] = main.confFile.toString();
+            main.start();
+
+            Assert.assertFalse("waiting for server being up", ClientBase
+                    .waitForServerUp("127.0.0.1:" + CLIENT_PORT,
+                            CONNECTION_TIMEOUT / 2));
+        } finally {
+            // resets "zookeeper.datadir.autocreate" flag
+            System.setProperty(FileTxnSnapLog.ZOOKEEPER_DATADIR_AUTOCREATE,
+                    FileTxnSnapLog.ZOOKEEPER_DATADIR_AUTOCREATE_DEFAULT);
+        }
+    }
+
+    /**
+     * Test verifies the auto creation of data dir and data log dir.
+     * Sets "zookeeper.datadir.autocreate" to true.
+     */
+    @Test(timeout = 30000)
+    public void testWithAutoCreateDataLogDir() throws Exception {
+        ClientBase.setupTestEnv();
+        System.setProperty(FileTxnSnapLog.ZOOKEEPER_DATADIR_AUTOCREATE, "true");
         final int CLIENT_PORT = PortAssignment.unique();
 
-        MainThread main = new MainThread(CLIENT_PORT, false);
+        MainThread main = new MainThread(CLIENT_PORT, false, null);
         String args[] = new String[1];
         args[0] = main.confFile.toString();
         main.start();
@@ -337,9 +362,11 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
         Assert.assertTrue("waiting for server being up",
                 ClientBase.waitForServerUp("127.0.0.1:" + CLIENT_PORT,
                         CONNECTION_TIMEOUT));
-
+        clientConnected = new CountDownLatch(1);
         ZooKeeper zk = new ZooKeeper("127.0.0.1:" + CLIENT_PORT,
                 ClientBase.CONNECTION_TIMEOUT, this);
+        Assert.assertTrue("Failed to establish zkclient connection!",
+                clientConnected.await(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS));
 
         zk.create("/foo", "foobar".getBytes(), Ids.OPEN_ACL_UNSAFE,
                 CreateMode.PERSISTENT);
@@ -354,6 +381,111 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
         Assert.assertTrue("waiting for server down", ClientBase
                 .waitForServerDown("127.0.0.1:" + CLIENT_PORT,
                         ClientBase.CONNECTION_TIMEOUT));
+    }
+
+    /**
+     * Test verifies that the server shouldn't allow minsessiontimeout >
+     * maxsessiontimeout
+     */
+    @Test
+    public void testWithMinSessionTimeoutGreaterThanMaxSessionTimeout()
+            throws Exception {
+        ClientBase.setupTestEnv();
+
+        final int CLIENT_PORT = PortAssignment.unique();
+        final int tickTime = 2000;
+        final int minSessionTimeout = 20 * tickTime + 1000; // min is higher
+        final int maxSessionTimeout = tickTime * 2 - 100; // max is lower
+        final String configs = "maxSessionTimeout=" + maxSessionTimeout + "\n"
+                + "minSessionTimeout=" + minSessionTimeout + "\n";
+        MainThread main = new MainThread(CLIENT_PORT, false, configs);
+        String args[] = new String[1];
+        args[0] = main.confFile.toString();
+        try {
+            main.main.initializeAndRun(args);
+            Assert.fail("Must throw exception as "
+                    + "minsessiontimeout > maxsessiontimeout");
+        } catch (ConfigException iae) {
+            // expected
+        }
+    }
+
+    /**
+     * Test verifies that the server is able to redefine if user configured only
+     * minSessionTimeout limit
+     */
+    @Test
+    public void testWithOnlyMinSessionTimeout() throws Exception {
+        ClientBase.setupTestEnv();
+
+        final int CLIENT_PORT = PortAssignment.unique();
+        final int tickTime = 2000;
+        final int minSessionTimeout = tickTime * 2 - 100;
+        int maxSessionTimeout = 20 * tickTime;
+        final String configs = "minSessionTimeout=" + minSessionTimeout + "\n";
+        MainThread main = new MainThread(CLIENT_PORT, false, configs);
+        main.start();
+
+        String HOSTPORT = "127.0.0.1:" + CLIENT_PORT;
+        Assert.assertTrue("waiting for server being up",
+                ClientBase.waitForServerUp(HOSTPORT, CONNECTION_TIMEOUT));
+        // create session with min value
+        verifySessionTimeOut(minSessionTimeout, minSessionTimeout, HOSTPORT);
+        verifySessionTimeOut(minSessionTimeout - 2000, minSessionTimeout,
+                HOSTPORT);
+        // create session with max value
+        verifySessionTimeOut(maxSessionTimeout, maxSessionTimeout, HOSTPORT);
+        verifySessionTimeOut(maxSessionTimeout + 2000, maxSessionTimeout,
+                HOSTPORT);
+        main.shutdown();
+        Assert.assertTrue("waiting for server down", ClientBase
+                .waitForServerDown(HOSTPORT, ClientBase.CONNECTION_TIMEOUT));
+    }
+
+    /**
+     * Test verifies that the server is able to redefine the min/max session
+     * timeouts
+     */
+    @Test
+    public void testMinMaxSessionTimeOut() throws Exception {
+        ClientBase.setupTestEnv();
+
+        final int CLIENT_PORT = PortAssignment.unique();
+        final int tickTime = 2000;
+        final int minSessionTimeout = tickTime * 2 - 100;
+        final int maxSessionTimeout = 20 * tickTime + 1000;
+        final String configs = "maxSessionTimeout=" + maxSessionTimeout + "\n"
+                + "minSessionTimeout=" + minSessionTimeout + "\n";
+        MainThread main = new MainThread(CLIENT_PORT, false, configs);
+        main.start();
+
+        String HOSTPORT = "127.0.0.1:" + CLIENT_PORT;
+        Assert.assertTrue("waiting for server being up",
+                ClientBase.waitForServerUp(HOSTPORT, CONNECTION_TIMEOUT));
+        // create session with min value
+        verifySessionTimeOut(minSessionTimeout, minSessionTimeout, HOSTPORT);
+        verifySessionTimeOut(minSessionTimeout - 2000, minSessionTimeout,
+                HOSTPORT);
+        // create session with max value
+        verifySessionTimeOut(maxSessionTimeout, maxSessionTimeout, HOSTPORT);
+        verifySessionTimeOut(maxSessionTimeout + 2000, maxSessionTimeout,
+                HOSTPORT);
+        main.shutdown();
+
+        Assert.assertTrue("waiting for server down", ClientBase
+                .waitForServerDown(HOSTPORT, ClientBase.CONNECTION_TIMEOUT));
+    }
+
+    private void verifySessionTimeOut(int sessionTimeout,
+            int expectedSessionTimeout, String HOSTPORT) throws IOException,
+            KeeperException, InterruptedException {
+        clientConnected = new CountDownLatch(1);
+        ZooKeeper zk = new ZooKeeper(HOSTPORT, sessionTimeout, this);
+        Assert.assertTrue("Failed to establish zkclient connection!",
+                clientConnected.await(sessionTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertEquals("Not able to configure the sessionTimeout values",
+                expectedSessionTimeout, zk.getSessionTimeout());
+        zk.close();
     }
 
     @Test
@@ -402,188 +534,6 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
         }
     }
 
-    /**
-     * Test case to verify that ZooKeeper server is able to shutdown properly
-     * when there are pending request(s) in the RequestProcessor chain.
-     *
-     * {@link https://issues.apache.org/jira/browse/ZOOKEEPER-2347}
-     */
-    @Test(timeout = 30000)
-    public void testRaceBetweenSyncFlushAndZKShutdown() throws Exception {
-        File tmpDir = ClientBase.createTmpDir();
-        File testDir = File.createTempFile("test", ".dir", tmpDir);
-        testDir.delete();
-
-        // Following are the sequence of steps to simulate the deadlock
-        // situation - SyncRequestProcessor#shutdown holds a lock and waits on
-        // FinalRequestProcessor to complete a pending operation, which in turn
-        // also needs the ZooKeeperServer lock
-
-        // 1. start zk server
-        FileTxnSnapLog ftsl = new FileTxnSnapLog(testDir, testDir);
-        final SimpleZooKeeperServer zkServer = new SimpleZooKeeperServer(ftsl);
-        zkServer.startup();
-        // 2. Wait for setting up request processor chain. At the end of setup,
-        // it will add a mock request into the chain
-        // 3. Also, waiting for FinalRequestProcessor to start processing request
-        zkServer.waitForFinalProcessRequest();
-        // 4. Above step ensures that there is a request in the processor chain.
-        // Now invoke shutdown, which will acquire zks lock
-        Thread shutdownThread = new Thread() {
-            public void run() {
-                zkServer.shutdown();
-            };
-        };
-        shutdownThread.start();
-        // 5. Wait for SyncRequestProcessor to trigger shutdown function.
-        // This is to ensure that zks lock is acquired
-        zkServer.waitForSyncReqProcessorShutdown();
-        // 6. Now resume FinalRequestProcessor which in turn call
-        // zks#decInProcess() function and tries to acquire zks lock.
-        // This results in deadlock
-        zkServer.resumeFinalProcessRequest();
-        // 7. Waiting to finish server shutdown. Testing that
-        // SyncRequestProcessor#shutdown holds a lock and waits on
-        // FinalRequestProcessor to complete a pending operation, which in turn
-        // also needs the ZooKeeperServer lock
-        shutdownThread.join();
-    }
-
-    private class SimpleZooKeeperServer extends ZooKeeperServer {
-        private SimpleSyncRequestProcessor syncProcessor;
-        private SimpleFinalRequestProcessor finalProcessor;
-
-        SimpleZooKeeperServer(FileTxnSnapLog ftsl) throws IOException {
-            super(ftsl, 2000, 2000, 4000, null, new ZKDatabase(ftsl));
-        }
-
-        @Override
-        protected void setupRequestProcessors() {
-            finalProcessor = new SimpleFinalRequestProcessor(this);
-            syncProcessor = new SimpleSyncRequestProcessor(this,
-                    finalProcessor);
-            syncProcessor.start();
-            firstProcessor = new PrepRequestProcessor(this, syncProcessor);
-            ((PrepRequestProcessor) firstProcessor).start();
-
-            // add request to the chain
-            addRequestToSyncProcessor();
-        }
-
-        private void addRequestToSyncProcessor() {
-            long zxid = ZxidUtils.makeZxid(3, 7);
-            TxnHeader hdr = new TxnHeader(1, 1, zxid, 1,
-                    ZooDefs.OpCode.setData);
-            Record txn = new SetDataTxn("/foo" + zxid, new byte[0], 1);
-            byte[] buf;
-            try {
-                buf = Util.marshallTxnEntry(hdr, txn);
-            } catch (IOException e) {
-                LOG.error("IOException while adding request to SyncRequestProcessor", e);
-                Assert.fail("IOException while adding request to SyncRequestProcessor!");
-                return;
-            }
-            NettyServerCnxnFactory factory = new NettyServerCnxnFactory();
-            final MockNettyServerCnxn nettyCnxn = new MockNettyServerCnxn(null,
-                    this, factory);
-            Request req = new Request(nettyCnxn, 1, 1, ZooDefs.OpCode.setData,
-                    ByteBuffer.wrap(buf), null);
-            req.hdr = hdr;
-            req.txn = txn;
-            syncProcessor.processRequest(req);
-        }
-
-        void waitForFinalProcessRequest() throws InterruptedException {
-            Assert.assertTrue("Waiting for FinalRequestProcessor to start processing request",
-                    finalProcessor.waitForProcessRequestToBeCalled());
-        }
-
-        void waitForSyncReqProcessorShutdown() throws InterruptedException {
-            Assert.assertTrue("Waiting for SyncRequestProcessor to shut down",
-                    syncProcessor.waitForShutdownToBeCalled());
-        }
-
-        void resumeFinalProcessRequest() throws InterruptedException {
-            finalProcessor.resumeProcessRequest();
-        }
-    }
-
-    private class MockNettyServerCnxn extends NettyServerCnxn {
-        public MockNettyServerCnxn(Channel channel, ZooKeeperServer zks,
-                NettyServerCnxnFactory factory) {
-            super(null, null, factory);
-        }
-
-        @Override
-        protected synchronized void updateStatsForResponse(long cxid, long zxid,
-                String op, long start, long end) {
-            return;
-        }
-
-        @Override
-        public synchronized void sendResponse(ReplyHeader h, Record r,
-                String tag) {
-            return;
-        }
-    }
-
-    private class SimpleFinalRequestProcessor extends FinalRequestProcessor {
-        private CountDownLatch finalReqProcessCalled = new CountDownLatch(1);
-        private CountDownLatch resumeFinalReqProcess = new CountDownLatch(1);
-        private volatile boolean interrupted = false;
-        public SimpleFinalRequestProcessor(ZooKeeperServer zks) {
-            super(zks);
-        }
-
-        @Override
-        public void processRequest(Request request) {
-            finalReqProcessCalled.countDown();
-            try {
-                resumeFinalReqProcess.await(ClientBase.CONNECTION_TIMEOUT,
-                        TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                LOG.error("Interrupted while waiting to process request", e);
-                interrupted = true; // Marked as interrupted
-                resumeFinalReqProcess.countDown();
-                return;
-            }
-            super.processRequest(request);
-        }
-
-        boolean waitForProcessRequestToBeCalled() throws InterruptedException {
-            return finalReqProcessCalled.await(ClientBase.CONNECTION_TIMEOUT,
-                    TimeUnit.MILLISECONDS);
-        }
-
-        void resumeProcessRequest() throws InterruptedException {
-            resumeFinalReqProcess.countDown();
-            resumeFinalReqProcess.await(ClientBase.CONNECTION_TIMEOUT,
-                    TimeUnit.MILLISECONDS);
-            Assert.assertFalse("Interrupted while waiting to process request",
-                    interrupted);
-        }
-    }
-
-    private class SimpleSyncRequestProcessor extends SyncRequestProcessor {
-        private final CountDownLatch shutdownCalled = new CountDownLatch(1);
-
-        public SimpleSyncRequestProcessor(ZooKeeperServer zks,
-                RequestProcessor nextProcessor) {
-            super(zks, nextProcessor);
-        }
-
-        @Override
-        public void shutdown() {
-            shutdownCalled.countDown();
-            super.shutdown();
-        }
-
-        boolean waitForShutdownToBeCalled() throws InterruptedException {
-            return shutdownCalled.await(ClientBase.CONNECTION_TIMEOUT / 3,
-                    TimeUnit.MILLISECONDS);
-        }
-    }
-
     private void deleteFile(File f) throws IOException {
         if (f.isDirectory()) {
             for (File c : f.listFiles())
@@ -610,6 +560,8 @@ public class ZooKeeperServerMainTest extends ZKTestCase implements Watcher {
     }
 
     public void process(WatchedEvent event) {
-        // ignore for this test
+        if (event.getState() == KeeperState.SyncConnected) {
+            clientConnected.countDown();
+        }
     }
 }

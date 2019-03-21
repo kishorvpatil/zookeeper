@@ -67,7 +67,7 @@
 <a class="unselected" href="https://cwiki.apache.org/confluence/display/ZOOKEEPER/">Wiki</a>
 </li>
 <li class="current">
-<a class="selected" href="index.html">ZooKeeper 3.4 Documentation</a>
+<a class="selected" href="index.html">ZooKeeper 3.5 Documentation</a>
 </li>
 </ul>
 <!--+
@@ -135,23 +135,8 @@ document.write("Last Published: " + document.lastModified);
 <a href="recipes.html">Recipes</a>
 </div>
 </div>
-<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">BookKeeper</div>
-<div id="menu_1.3" class="menuitemgroup">
-<div class="menuitem">
-<a href="bookkeeperStarted.html">Getting started</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperOverview.html">Overview</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperConfig.html">Setup guide</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperProgrammer.html">Programmer's guide</a>
-</div>
-</div>
-<div onclick="SwitchMenu('menu_selected_1.4', 'skin/')" id="menu_selected_1.4Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">Admin &amp; Ops</div>
-<div id="menu_selected_1.4" class="selectedmenuitemgroup" style="display: block;">
+<div onclick="SwitchMenu('menu_selected_1.3', 'skin/')" id="menu_selected_1.3Title" class="menutitle" style="background-image: url('skin/images/chapter_open.gif');">Admin &amp; Ops</div>
+<div id="menu_selected_1.3" class="selectedmenuitemgroup" style="display: block;">
 <div class="menupage">
 <div class="menupagetitle">Administrator's Guide</div>
 </div>
@@ -164,15 +149,18 @@ document.write("Last Published: " + document.lastModified);
 <div class="menuitem">
 <a href="zookeeperObservers.html">Observers Guide</a>
 </div>
+<div class="menuitem">
+<a href="zookeeperReconfig.html">Dynamic Reconfiguration</a>
 </div>
-<div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Contributor</div>
-<div id="menu_1.5" class="menuitemgroup">
+</div>
+<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Contributor</div>
+<div id="menu_1.4" class="menuitemgroup">
 <div class="menuitem">
 <a href="zookeeperInternals.html">ZooKeeper Internals</a>
 </div>
 </div>
-<div onclick="SwitchMenu('menu_1.6', 'skin/')" id="menu_1.6Title" class="menutitle">Miscellaneous</div>
-<div id="menu_1.6" class="menuitemgroup">
+<div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Miscellaneous</div>
+<div id="menu_1.5" class="menuitemgroup">
 <div class="menuitem">
 <a href="https://cwiki.apache.org/confluence/display/ZOOKEEPER">Wiki</a>
 </div>
@@ -288,7 +276,7 @@ document.write("Last Published: " + document.lastModified);
 <a href="#sc_clusterOptions">Cluster Options</a>
 </li>
 <li>
-<a href="#sc_authOptions">Authentication &amp; Authorization Options</a>
+<a href="#sc_authOptions">Encryption, Authentication, Authorization Options</a>
 </li>
 <li>
 <a href="#Experimental+Options%2FFeatures">Experimental Options/Features</a>
@@ -297,12 +285,29 @@ document.write("Last Published: " + document.lastModified);
 <a href="#Unsafe+Options">Unsafe Options</a>
 </li>
 <li>
+<a href="#Disabling+data+directory+autocreation">Disabling data directory autocreation</a>
+</li>
+<li>
+<a href="#sc_performance_options">Performance Tuning Options</a>
+</li>
+<li>
 <a href="#Communication+using+the+Netty+framework">Communication using the Netty framework</a>
+</li>
+<li>
+<a href="#sc_adminserver_config">AdminServer configuration</a>
 </li>
 </ul>
 </li>
 <li>
-<a href="#sc_zkCommands">ZooKeeper Commands: The Four Letter Words</a>
+<a href="#sc_zkCommands">ZooKeeper Commands</a>
+<ul class="minitoc">
+<li>
+<a href="#sc_4lw">The Four Letter Words</a>
+</li>
+<li>
+<a href="#sc_adminserver">The AdminServer</a>
+</li>
+</ul>
 </li>
 <li>
 <a href="#sc_dataFileManagement">Data File Management</a>
@@ -382,7 +387,7 @@ document.write("Last Published: " + document.lastModified);
 <h3 class="h4">System Requirements</h3>
 <a name="sc_supportedPlatforms"></a>
 <h4>Supported Platforms</h4>
-<p>ZooKeeper consists of multiple components. Some components are
+<p>ZooKeeper consists of multiple components.  Some components are
         supported broadly, and other components are supported only on a smaller
         set of platforms.</p>
 <ul>
@@ -499,13 +504,14 @@ document.write("Last Published: " + document.lastModified);
         is no full support.</p>
 <a name="sc_requiredSoftware"></a>
 <h4>Required Software </h4>
-<p>ZooKeeper runs in Java, release 1.6 or greater (JDK 6 or
-          greater).  It runs as an <em>ensemble</em> of
-          ZooKeeper servers. Three ZooKeeper servers is the minimum
-          recommended size for an ensemble, and we also recommend that
-          they run on separate machines. At Yahoo!, ZooKeeper is
-          usually deployed on dedicated RHEL boxes, with dual-core
-          processors, 2GB of RAM, and 80GB IDE hard drives.</p>
+<p>ZooKeeper runs in Java, release 1.8 or greater (JDK 8 or
+        greater, FreeBSD support requires openjdk8).  It runs as an
+        <em>ensemble</em> of ZooKeeper servers. Three
+        ZooKeeper servers is the minimum recommended size for an
+        ensemble, and we also recommend that they run on separate
+        machines. At Yahoo!, ZooKeeper is usually deployed on
+        dedicated RHEL boxes, with dual-core processors, 2GB of RAM,
+        and 80GB IDE hard drives.</p>
 <a name="sc_zkMulitServerSetup"></a>
 <h3 class="h4">Clustered (Multi-Server) Setup</h3>
 <p>For reliable ZooKeeper service, you should deploy ZooKeeper in a
@@ -629,7 +635,9 @@ server.3=zoo3:2888:3888</pre>
           consists of a single line containing only the text of that machine's
           id. So <span class="codefrag filename">myid</span> of server 1 would contain the text
           "1" and nothing else. The id must be unique within the
-          ensemble and should have a value between 1 and 255.</p>
+          ensemble and should have a value between 1 and 255. <strong>IMPORTANT:</strong> if you
+          enable extended features such as TTL Nodes (see below) the id must be
+          between 1 and 254 due to internal limitations.</p>
         
 </li>
 
@@ -641,7 +649,7 @@ server.3=zoo3:2888:3888</pre>
 
           
 <p>
-<span class="codefrag computeroutput">$ java -cp zookeeper.jar:lib/slf4j-api-1.6.1.jar:lib/slf4j-log4j12-1.6.1.jar:lib/log4j-1.2.15.jar:conf \
+<span class="codefrag computeroutput">$ java -cp zookeeper.jar:lib/slf4j-api-1.7.5.jar:lib/slf4j-log4j12-1.7.5.jar:lib/log4j-1.2.17.jar:conf \
               org.apache.zookeeper.server.quorum.QuorumPeerMain zoo.cfg
           </span>
 </p>
@@ -798,7 +806,7 @@ server.3=zoo3:2888:3888</pre>
 <li>
           
 <p>
-<a href="#sc_zkCommands">ZooKeeper Commands: The Four Letter Words</a>
+<a href="#sc_zkCommands">ZooKeeper Commands</a>
 </p>
         
 </li>
@@ -879,7 +887,7 @@ server.3=zoo3:2888:3888</pre>
 <a name="Single+Machine+Requirements"></a>
 <h4>Single Machine Requirements</h4>
 <p>If ZooKeeper has to contend with other applications for
-        access to resourses like storage media, CPU, network, or
+        access to resources like storage media, CPU, network, or
         memory, its performance will suffer markedly.  ZooKeeper has
         strong durability guarantees, which means it uses storage
         media to log changes before the operation responsible for the
@@ -964,7 +972,7 @@ server.3=zoo3:2888:3888</pre>
         in the unlikely event a recent log has become corrupted). This
         can be run as a cron job on the ZooKeeper server machines to
         clean up the logs daily.</p>
-<pre class="code"> java -cp zookeeper.jar:lib/slf4j-api-1.6.1.jar:lib/slf4j-log4j12-1.6.1.jar:lib/log4j-1.2.15.jar:conf org.apache.zookeeper.server.PurgeTxnLog &lt;dataDir&gt; &lt;snapDir&gt; -n &lt;count&gt;</pre>
+<pre class="code"> java -cp zookeeper.jar:lib/slf4j-api-1.7.5.jar:lib/slf4j-log4j12-1.7.5.jar:lib/log4j-1.2.17.jar:conf org.apache.zookeeper.server.PurgeTxnLog &lt;dataDir&gt; &lt;snapDir&gt; -n &lt;count&gt;</pre>
 <p>Automatic purging of the snapshots and corresponding
         transaction logs was introduced in version 3.4.0 and can be
         enabled via the following configuration parameters <strong>autopurge.snapRetainCount</strong> and <strong>autopurge.purgeInterval</strong>. For more on
@@ -997,6 +1005,16 @@ server.3=zoo3:2888:3888</pre>
       examples) managing your ZooKeeper server ensures that if the
       process does exit abnormally it will automatically be restarted
       and will quickly rejoin the cluster.</p>
+<p>It is also recommended to configure the ZooKeeper server process to
+      terminate and dump its heap if an
+      <span class="codefrag computeroutput">OutOfMemoryError</span> occurs.  This is achieved
+      by launching the JVM with the following arguments on Linux and Windows
+      respectively.  The <span class="codefrag filename">zkServer.sh</span> and
+      <span class="codefrag filename">zkServer.cmd</span> scripts that ship with ZooKeeper set
+      these options.
+      </p>
+<pre class="code">-XX:+HeapDumpOnOutOfMemoryError -XX:OnOutOfMemoryError='kill -9 %p'</pre>
+<pre class="code">"-XX:+HeapDumpOnOutOfMemoryError" "-XX:OnOutOfMemoryError=cmd /c taskkill /pid %%%%p /t /f"</pre>
 <a name="sc_monitoring"></a>
 <h3 class="h4">Monitoring</h3>
 <p>The ZooKeeper service can be monitored in one of two
@@ -1004,12 +1022,22 @@ server.3=zoo3:2888:3888</pre>
       your environment/requirements.</p>
 <a name="sc_logging"></a>
 <h3 class="h4">Logging</h3>
-<p>ZooKeeper uses <strong>log4j</strong> version 1.2 as 
-      its logging infrastructure. The  ZooKeeper default <span class="codefrag filename">log4j.properties</span> 
-      file resides in the <span class="codefrag filename">conf</span> directory. Log4j requires that 
-      <span class="codefrag filename">log4j.properties</span> either be in the working directory 
-      (the directory from which ZooKeeper is run) or be accessible from the classpath.</p>
-<p>For more information, see 
+<p>
+        ZooKeeper uses <strong><a href="http://www.slf4j.org">SLF4J</a></strong>
+        version 1.7.5 as its logging infrastructure. For backward compatibility it is bound to
+        <strong>LOG4J</strong> but you can use
+        <strong><a href="http://logback.qos.ch/">LOGBack</a></strong>
+        or any other supported logging framework of your choice.
+    </p>
+<p>
+        The ZooKeeper default <span class="codefrag filename">log4j.properties</span>
+        file resides in the <span class="codefrag filename">conf</span> directory. Log4j requires that
+        <span class="codefrag filename">log4j.properties</span> either be in the working directory
+        (the directory from which ZooKeeper is run) or be accessible from the classpath.
+    </p>
+<p>For more information about SLF4J, see
+      <a href="http://www.slf4j.org/manual.html">its manual</a>.</p>
+<p>For more information about LOG4J, see
       <a href="http://logging.apache.org/log4j/1.2/manual.html#defaultInit">Log4j Default Initialization Procedure</a> 
       of the log4j manual.</p>
 <a name="sc_troubleshooting"></a>
@@ -1040,6 +1068,18 @@ server.3=zoo3:2888:3888</pre>
       layouts are the same. If servers use different configuration files, care
       must be taken to ensure that the list of servers in all of the different
       configuration files match.</p>
+<div class="note">
+<div class="label">Note</div>
+<div class="content">
+        
+<p>In 3.5.0 and later, some of these parameters should be placed in
+         a dynamic configuration file. If they are placed in the static
+         configuration file, ZooKeeper will automatically move them over to the
+         dynamic configuration file. See <a href="zookeeperReconfig.html">
+         Dynamic Reconfiguration</a> for more information.</p>
+      
+</div>
+</div>
 <a name="sc_minimumConfiguration"></a>
 <h4>Minimum Configuration</h4>
 <p>Here are the minimum configuration keywords that must be defined
@@ -1052,6 +1092,22 @@ server.3=zoo3:2888:3888</pre>
 <dd>
 <p>the port to listen for client connections; that is, the
               port that clients attempt to connect to.</p>
+</dd>
+
+          
+<dt>
+<term>secureClientPort</term>
+</dt>
+<dd>
+<p>the port to listen on for secure client connections using SSL.
+
+              <strong>clientPort</strong> specifies
+                the port for plaintext connections while <strong>
+                  secureClientPort</strong> specifies the port for SSL
+                connections. Specifying both enables mixed-mode while omitting
+                either will disable that mode.</p>
+<p>Note that SSL feature will be enabled when user plugs-in
+                zookeeper.serverCnxnFactory, zookeeper.clientCnxnSocket as Netty.</p>
 </dd>
 
           
@@ -1274,6 +1330,38 @@ server.3=zoo3:2888:3888</pre>
               of the observers on restart. Set to "false" to disable this
               feature. Default is "true"</p>
 </dd>
+
+          
+<dt>
+<term>zookeeper.extendedTypesEnabled</term>
+</dt>
+<dd>
+<p>(Java system property only: <strong>zookeeper.extendedTypesEnabled</strong>)</p>
+<p>
+<strong>New in 3.5.4, 3.6.0:</strong> Define to "true" to enable
+              extended features such as the creation of <a href="zookeeperProgrammers.html#TTL+Nodes">TTL Nodes</a>.
+              They are disabled by default. IMPORTANT: when enabled server IDs must
+              be less than 255 due to internal limitations.
+              </p>
+</dd>
+
+          
+<dt>
+<term>zookeeper.emulate353TTLNodes</term>
+</dt>
+<dd>
+<p>(Java system property only: <strong>zookeeper.emulate353TTLNodes</strong>)</p>
+<p>
+<strong>New in 3.5.4, 3.6.0:</strong> Due to
+                <a href="https://issues.apache.org/jira/browse/ZOOKEEPER-2901">ZOOKEEPER-2901</a> TTL nodes
+                created in version 3.5.3 are not supported in 3.5.4/3.6.0. However, a workaround is provided via the
+                zookeeper.emulate353TTLNodes system property. If you used TTL nodes in ZooKeeper 3.5.3 and need to maintain
+                compatibility set <strong>zookeeper.emulate353TTLNodes</strong> to "true" in addition to
+                <strong>zookeeper.extendedTypesEnabled</strong>. NOTE: due to the bug, server IDs
+                must be 127 or less. Additionally, the maximum support TTL value is 1099511627775 which is smaller
+                than what was allowed in 3.5.3 (1152921504606846975)</p>
+</dd>
+
         
 </dl>
 <a name="sc_clusterOptions"></a>
@@ -1430,26 +1518,80 @@ server.3=zoo3:2888:3888</pre>
 
           
 <dt>
+<term>standaloneEnabled</term>
+</dt>
+<dd>
+<p>(No Java system property)</p>
+<p>
+<strong>New in 3.5.0:</strong>
+              When set to false, a single server can be started in replicated
+              mode, a lone participant can run with observers, and a cluster
+              can reconfigure down to one node, and up from one node. The
+              default is true for backwards compatibility. It can be set
+              using QuorumPeerConfig's setStandaloneEnabled method or by
+              adding "standaloneEnabled=false" or "standaloneEnabled=true"
+              to a server's config file.
+              </p>
+</dd>
+
+          
+<dt>
+<term>reconfigEnabled</term>
+</dt>
+<dd>
+<p>(No Java system property)</p>
+<p>
+<strong>New in 3.5.3:</strong>
+                This controls the enabling or disabling of
+                <a href="zookeeperReconfig.html">
+                  Dynamic Reconfiguration</a> feature. When the feature
+                is enabled, users can perform reconfigure operations through
+                the ZooKeeper client API or through ZooKeeper command line tools
+                assuming users are authorized to perform such operations.
+                When the feature is disabled, no user, including the super user,
+                can perform a reconfiguration. Any attempt to reconfigure will return an error.
+                <strong>"reconfigEnabled"</strong> option can be set as
+                <strong>"reconfigEnabled=false"</strong> or
+                <strong>"reconfigEnabled=true"</strong>
+                to a server's config file, or using QuorumPeerConfig's
+                setReconfigEnabled method. The default value is false.
+
+                If present, the value should be consistent across every server in
+                the entire ensemble. Setting the value as true on some servers and false
+                on other servers will cause inconsistent behavior depending on which server
+                is elected as leader. If the leader has a setting of
+                <strong>"reconfigEnabled=true"</strong>, then the ensemble
+                will have reconfig feature enabled. If the leader has a setting of
+                <strong>"reconfigEnabled=false"</strong>, then the ensemble
+                will have reconfig feature disabled. It is thus recommended to have a consistent
+                value for <strong>"reconfigEnabled"</strong> across servers
+                in the ensemble.
+              </p>
+</dd>
+
+          
+<dt>
 <term>4lw.commands.whitelist</term>
 </dt>
 <dd>
 <p>(Java system property: <strong>zookeeper.4lw.commands.whitelist</strong>)</p>
 <p>
-<strong>New in 3.4.10:</strong>
-                This property contains a list of comma separated
-                <a href="#sc_zkCommands">Four Letter Words</a> commands. It is introduced
-                to provide fine grained control over the set of commands ZooKeeper can execute,
-                so users can turn off certain commands if necessary.
-                By default it contains all supported four letter word commands except "wchp" and "wchc",
-                if the property is not specified. If the property is specified, then only commands listed
-                in the whitelist are enabled.
+<strong>New in 3.5.3:</strong>
+                A list of comma separated <a href="#sc_4lw">Four Letter Words</a>
+                commands that user wants to use. A valid Four Letter Words
+                command must be put in this list else ZooKeeper server will
+                not enable the command.
+                By default the whitelist only contains "srvr" command
+                which zkServer.sh uses. The rest of four letter word commands are disabled
+                by default.
               </p>
 <p>Here's an example of the configuration that enables stat, ruok, conf, and isro
-                command while disabling the rest of Four Letter Words command:</p>
+              command while disabling the rest of Four Letter Words command:</p>
 <pre class="code">
                 4lw.commands.whitelist=stat, ruok, conf, isro
               </pre>
-<p>Users can also use asterisk option so they don't have to include every command one by one in the list.
+<p>If you really need enable all four letter word commands by default, you can use
+                the asterisk option so you don't have to include every command one by one in the list.
                 As an example, this will enable all four letter word commands:
               </p>
 <pre class="code">
@@ -1459,30 +1601,12 @@ server.3=zoo3:2888:3888</pre>
 
           
 <dt>
-<term>ipReachableTimeout</term>
-</dt>
-<dd>
-<p>(Java system property: <strong>zookeeper.ipReachableTimeout</strong>)</p>
-<p>
-<strong>New in 3.4.11:</strong>
-                Set this timeout value for IP addresses reachable checking when hostname is resolved, as mesured in
-                milliseconds.
-                By default, ZooKeeper will use the first IP address of the hostname(without any reachable checking).
-                When zookeeper.ipReachableTimeout is set(larger than 0), ZooKeeper will will try to pick up the first 
-                IP address which is reachable. This is done by calling Java API InetAddress.isReachable(long timeout)
-                function, in which this timeout value is used. If none of such reachable IP address can be found, the
-                first IP address of the hostname will be used anyway.
-              </p>
-</dd>
-
-          
-<dt>
 <term>tcpKeepAlive</term>
 </dt>
 <dd>
 <p>(Java system property: <strong>zookeeper.tcpKeepAlive</strong>)</p>
 <p>
-<strong>New in 3.4.11:</strong>
+<strong>New in 3.5.4:</strong>
                 Setting this to true sets the TCP keepAlive flag on the
                 sockets used by quorum members to perform elections.
                 This will allow for connections between quorum members to
@@ -1500,16 +1624,16 @@ server.3=zoo3:2888:3888</pre>
 </dl>
 <p></p>
 <a name="sc_authOptions"></a>
-<h4>Authentication &amp; Authorization Options</h4>
+<h4>Encryption, Authentication, Authorization Options</h4>
 <p>The options in this section allow control over
-        authentication/authorization performed by the service.</p>
+        encryption/authentication/authorization performed by the service.</p>
 <dl>
           
 <dt>
-<term>zookeeper.DigestAuthenticationProvider.superDigest</term>
+<term>DigestAuthenticationProvider.superDigest</term>
 </dt>
 <dd>
-<p>(Java system property only: <strong>zookeeper.DigestAuthenticationProvider.superDigest</strong>)</p>
+<p>(Java system property: <strong>zookeeper.DigestAuthenticationProvider.superDigest</strong>)</p>
 <p>By default this feature is <strong>disabled</strong>
 </p>
 <p>
@@ -1530,6 +1654,579 @@ server.3=zoo3:2888:3888</pre>
               prudent to use this authentication method only on
               localhost (not over the network) or over an encrypted
               connection.</p>
+</dd>
+
+          
+<dt>
+<term>X509AuthenticationProvider.superUser</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>zookeeper.X509AuthenticationProvider.superUser</strong>)</p>
+<p>The SSL-backed way to enable a ZooKeeper ensemble
+              administrator to access the znode hierarchy as a "super" user.
+              When this parameter is set to an X500 principal name, only an
+              authenticated client with that principal will be able to bypass
+              ACL checking and have full privileges to all znodes.</p>
+</dd>
+
+          
+<dt>
+<term>zookeeper.superUser</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>zookeeper.superUser</strong>)</p>
+<p>Similar to <strong>zookeeper.X509AuthenticationProvider.superUser</strong>
+              but is generic for SASL based logins. It stores the name of 
+              a user that can access the znode hierarchy as a "super" user.
+              </p>
+</dd>
+
+          
+<dt>
+<term>ssl.keyStore.location and ssl.keyStore.password</term>
+</dt>
+<dd>
+<p>(Java system properties: <strong>
+                zookeeper.ssl.keyStore.location</strong> and <strong>zookeeper.ssl.keyStore.password</strong>)</p>
+<p>Specifies the file path to a JKS containing the local
+                credentials to be used for SSL connections, and the
+                password to unlock the file.</p>
+</dd>
+
+          
+<dt>
+<term>ssl.trustStore.location and ssl.trustStore.password</term>
+</dt>
+<dd>
+<p>(Java system properties: <strong>
+                zookeeper.ssl.trustStore.location</strong> and <strong>zookeeper.ssl.trustStore.password</strong>)</p>
+<p>Specifies the file path to a JKS containing the remote
+                credentials to be used for SSL connections, and the
+                password to unlock the file.</p>
+</dd>
+
+          
+<dt>
+<term>ssl.authProvider</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>zookeeper.ssl.authProvider</strong>)</p>
+<p>Specifies a subclass of <strong>
+              org.apache.zookeeper.auth.X509AuthenticationProvider</strong>
+              to use for secure client authentication. This is useful in
+              certificate key infrastructures that do not use JKS. It may be
+              necessary to extend <strong>javax.net.ssl.X509KeyManager
+              </strong> and <strong>javax.net.ssl.X509TrustManager</strong>
+              to get the desired behavior from the SSL stack. To configure the
+              ZooKeeper server to use the custom provider for authentication,
+              choose a scheme name for the custom AuthenticationProvider and
+              set the property <strong>zookeeper.authProvider.[scheme]
+              </strong> to the fully-qualified class name of the custom
+              implementation. This will load the provider into the ProviderRegistry.
+              Then set this property <strong>
+              zookeeper.ssl.authProvider=[scheme]</strong> and that provider
+              will be used for secure authentication.</p>
+</dd>
+        
+</dl>
+<a name="Experimental+Options%2FFeatures"></a>
+<h4>Experimental Options/Features</h4>
+<p>New features that are currently considered experimental.</p>
+<dl>
+          
+<dt>
+<term>Read Only Mode Server</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>readonlymode.enabled</strong>)</p>
+<p>
+<strong>New in 3.4.0:</strong>
+              Setting this value to true enables Read Only Mode server
+              support (disabled by default). ROM allows clients
+              sessions which requested ROM support to connect to the
+              server even when the server might be partitioned from
+              the quorum. In this mode ROM clients can still read
+              values from the ZK service, but will be unable to write
+              values and see changes from other clients. See
+              ZOOKEEPER-784 for more details.
+              </p>
+</dd>
+
+        
+</dl>
+<a name="Unsafe+Options"></a>
+<h4>Unsafe Options</h4>
+<p>The following options can be useful, but be careful when you use
+        them. The risk of each is explained along with the explanation of what
+        the variable does.</p>
+<dl>
+          
+<dt>
+<term>forceSync</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>zookeeper.forceSync</strong>)</p>
+<p>Requires updates to be synced to media of the transaction
+              log before finishing processing the update. If this option is
+              set to no, ZooKeeper will not require updates to be synced to
+              the media.</p>
+</dd>
+
+          
+<dt>
+<term>jute.maxbuffer:</term>
+</dt>
+<dd>
+<p>(Java system property:<strong>
+              jute.maxbuffer</strong>)</p>
+<p>This option can only be set as a Java system property.
+              There is no zookeeper prefix on it. It specifies the maximum
+              size of the data that can be stored in a znode. The default is
+              0xfffff, or just under 1M. If this option is changed, the system
+              property must be set on all servers and clients otherwise
+              problems will arise. This is really a sanity check. ZooKeeper is
+              designed to store data on the order of kilobytes in size.</p>
+</dd>
+
+          
+<dt>
+<term>skipACL</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>zookeeper.skipACL</strong>)</p>
+<p>Skips ACL checks. This results in a boost in throughput,
+              but opens up full access to the data tree to everyone.</p>
+</dd>
+
+          
+<dt>
+<term>quorumListenOnAllIPs</term>
+</dt>
+<dd>
+<p>When set to true the ZooKeeper server will listen  
+              for connections from its peers on all available IP addresses,
+              and not only the address configured in the server list of the
+              configuration file. It affects the connections handling the 
+              ZAB protocol and the Fast Leader Election protocol. Default
+              value is <strong>false</strong>.</p>
+</dd>
+
+        
+</dl>
+<a name="Disabling+data+directory+autocreation"></a>
+<h4>Disabling data directory autocreation</h4>
+<p>
+<strong>New in 3.5:</strong> The default
+        behavior of a ZooKeeper server is to automatically create the
+        data directory (specified in the configuration file) when
+        started if that directory does not already exist. This can be
+        inconvenient and even dangerous in some cases. Take the case
+        where a configuration change is made to a running server,
+        wherein the <strong>dataDir</strong> parameter
+        is accidentally changed. When the ZooKeeper server is
+        restarted it will create this non-existent directory and begin
+        serving - with an empty znode namespace. This scenario can
+        result in an effective "split brain" situation (i.e. data in
+        both the new invalid directory and the original valid data
+        store). As such is would be good to have an option to turn off
+        this autocreate behavior. In general for production
+        environments this should be done, unfortunately however the
+        default legacy behavior cannot be changed at this point and
+        therefore this must be done on a case by case basis. This is
+        left to users and to packagers of ZooKeeper distributions.
+        </p>
+<p>When running <strong>zkServer.sh</strong> autocreate can be disabled
+        by setting the environment variable <strong>ZOO_DATADIR_AUTOCREATE_DISABLE</strong> to 1.
+        When running ZooKeeper servers directly from class files this
+        can be accomplished by setting <strong>zookeeper.datadir.autocreate=false</strong> on
+        the java command line, i.e. <strong>-Dzookeeper.datadir.autocreate=false</strong>
+        
+</p>
+<p>When this feature is disabled, and the ZooKeeper server
+        determines that the required directories do not exist it will
+        generate an error and refuse to start.
+        </p>
+<p>A new script <strong>zkServer-initialize.sh</strong> is provided to
+        support this new feature. If autocreate is disabled it is
+        necessary for the user to first install ZooKeeper, then create
+        the data directory (and potentially txnlog directory), and
+        then start the server. Otherwise as mentioned in the previous
+        paragraph the server will not start. Running <strong>zkServer-initialize.sh</strong> will create the
+        required directories, and optionally setup the myid file
+        (optional command line parameter). This script can be used
+        even if the autocreate feature itself is not used, and will
+        likely be of use to users as this (setup, including creation
+        of the myid file) has been an issue for users in the past.
+        Note that this script ensures the data directories exist only,
+        it does not create a config file, but rather requires a config
+        file to be available in order to execute.
+        </p>
+<a name="sc_performance_options"></a>
+<h4>Performance Tuning Options</h4>
+<p>
+<strong>New in 3.5.0:</strong> Several subsystems have been reworked
+        to improve read throughput. This includes multi-threading of the NIO communication subsystem and
+        request processing pipeline (Commit Processor). NIO is the default client/server communication
+        subsystem. Its threading model comprises 1 acceptor thread, 1-N selector threads and 0-M
+        socket I/O worker threads. In the request processing pipeline the system can be configured
+        to process multiple read request at once while maintaining the same consistency guarantee
+        (same-session read-after-write). The Commit Processor threading model comprises 1 main
+        thread and 0-N worker threads.
+        </p>
+<p>
+        The default values are aimed at maximizing read throughput on a dedicated ZooKeeper machine.
+        Both subsystems need to have sufficient amount of threads to achieve peak read throughput.
+        </p>
+<dl>
+
+          
+<dt>
+<term>zookeeper.nio.numSelectorThreads</term>
+</dt>
+<dd>
+<p>(Java system property only: <strong>zookeeper.nio.numSelectorThreads</strong>)
+              </p>
+<p>
+<strong>New in 3.5.0:</strong>
+              Number of NIO selector threads. At least 1 selector thread required.
+              It is recommended to use more than one selector for large numbers
+              of client connections. The default value is sqrt( number of cpu cores / 2 ).
+              </p>
+</dd>
+
+          
+<dt>
+<term>zookeeper.nio.numWorkerThreads</term>
+</dt>
+<dd>
+<p>(Java system property only: <strong>zookeeper.nio.numWorkerThreads</strong>)
+              </p>
+<p>
+<strong>New in 3.5.0:</strong>
+              Number of NIO worker threads. If configured with 0 worker threads, the selector threads
+              do the socket I/O directly. The default value is 2 times the number of cpu cores.
+              </p>
+</dd>
+
+          
+<dt>
+<term>zookeeper.commitProcessor.numWorkerThreads</term>
+</dt>
+<dd>
+<p>(Java system property only: <strong>zookeeper.commitProcessor.numWorkerThreads</strong>)
+              </p>
+<p>
+<strong>New in 3.5.0:</strong>
+              Number of Commit Processor worker threads. If configured with 0 worker threads, the main thread
+              will process the request directly. The default value is the number of cpu cores.
+              </p>
+</dd>
+
+          
+<dt>
+<term>znode.container.checkIntervalMs</term>
+</dt>
+<dd>
+<p>(Java system property only)</p>
+<p>
+<strong>New in 3.5.1:</strong> The
+                time interval in milliseconds for each check of candidate container
+                and ttl nodes. Default is "60000".</p>
+</dd>
+
+          
+<dt>
+<term>znode.container.maxPerMinute</term>
+</dt>
+<dd>
+<p>(Java system property only)</p>
+<p>
+<strong>New in 3.5.1:</strong> The
+                maximum number of container nodes that can be deleted per
+                minute. This prevents herding during container deletion.
+                Default is "10000".</p>
+</dd>
+        
+</dl>
+<a name="Communication+using+the+Netty+framework"></a>
+<h4>Communication using the Netty framework</h4>
+<p>
+<a href="http://netty.io">Netty</a>
+            is an NIO based client/server communication framework, it
+            simplifies (over NIO being used directly) many of the
+            complexities of network level communication for java
+            applications. Additionally the Netty framework has built
+            in support for encryption (SSL) and authentication
+            (certificates). These are optional features and can be
+            turned on or off individually.
+        </p>
+<p>In versions 3.5+, a ZooKeeper server can use Netty
+            instead of NIO (default option) by setting the environment
+            variable <strong>zookeeper.serverCnxnFactory</strong>
+            to <strong>org.apache.zookeeper.server.NettyServerCnxnFactory</strong>;
+            for the client, set <strong>zookeeper.clientCnxnSocket</strong>
+            to <strong>org.apache.zookeeper.ClientCnxnSocketNetty</strong>.
+        </p>
+<p>
+          TBD - tuning options for netty - currently there are none that are netty specific but we should add some. Esp around max bound on the number of reader worker threads netty creates.
+        </p>
+<p>
+          TBD - how to manage encryption
+        </p>
+<p>
+          TBD - how to manage certificates
+        </p>
+<a name="sc_adminserver_config"></a>
+<h4>AdminServer configuration</h4>
+<p>
+<strong>New in 3.5.0:</strong> The following
+        options are used to configure the <a href="#sc_adminserver">AdminServer</a>.</p>
+<dl>
+          
+<dt>
+<term>admin.enableServer</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>zookeeper.admin.enableServer</strong>)</p>
+<p>Set to "false" to disable the AdminServer.  By default the
+              AdminServer is enabled.</p>
+</dd>
+
+          
+<dt>
+<term>admin.serverAddress</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>zookeeper.admin.serverAddress</strong>)</p>
+<p>The address the embedded Jetty server listens on. Defaults to 0.0.0.0.</p>
+</dd>
+
+          
+<dt>
+<term>admin.serverPort</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>zookeeper.admin.serverPort</strong>)</p>
+<p>The port the embedded Jetty server listens on.  Defaults to 8080.</p>
+</dd>
+
+            
+<dt>
+<term>admin.idleTimeout</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>zookeeper.admin.idleTimeout</strong>)</p>
+<p>Set the maximum idle time in milliseconds that a connection can wait 
+                          before sending or receiving data. Defaults to 30000 ms.</p>
+</dd>
+
+
+          
+<dt>
+<term>admin.commandURL</term>
+</dt>
+<dd>
+<p>(Java system property: <strong>zookeeper.admin.commandURL</strong>)</p>
+<p>The URL for listing and issuing commands relative to the
+              root URL.  Defaults to "/commands".</p>
+</dd>
+        
+</dl>
+<a name="sc_zkCommands"></a>
+<h3 class="h4">ZooKeeper Commands</h3>
+<a name="sc_4lw"></a>
+<h4>The Four Letter Words</h4>
+<p>ZooKeeper responds to a small set of commands. Each command is
+        composed of four letters. You issue the commands to ZooKeeper via telnet
+        or nc, at the client port.</p>
+<p>Three of the more interesting commands: "stat" gives some
+        general information about the server and connected clients,
+        while "srvr" and "cons" give extended details on server and
+        connections respectively.</p>
+<p>
+<strong>New in 3.5.3:</strong>
+          Four Letter Words need to be explicitly white listed before using.
+          Please refer <strong>4lw.commands.whitelist</strong>
+           described in <a href="#sc_clusterOptions">
+            cluster configuration section</a> for details.
+          Moving forward, Four Letter Words will be deprecated, please use
+          <a href="#sc_adminserver">AdminServer</a> instead.
+        </p>
+<dl>
+          
+<dt>
+<term>conf</term>
+</dt>
+<dd>
+<p>
+<strong>New in 3.3.0:</strong> Print
+              details about serving configuration.</p>
+</dd>
+
+          
+<dt>
+<term>cons</term>
+</dt>
+<dd>
+<p>
+<strong>New in 3.3.0:</strong> List
+              full connection/session details for all clients connected
+              to this server. Includes information on numbers of packets
+              received/sent, session id, operation latencies, last
+              operation performed, etc...</p>
+</dd>
+
+          
+<dt>
+<term>crst</term>
+</dt>
+<dd>
+<p>
+<strong>New in 3.3.0:</strong> Reset
+              connection/session statistics for all connections.</p>
+</dd>
+
+          
+<dt>
+<term>dump</term>
+</dt>
+<dd>
+<p>Lists the outstanding sessions and ephemeral nodes. This
+              only works on the leader.</p>
+</dd>
+
+          
+<dt>
+<term>envi</term>
+</dt>
+<dd>
+<p>Print details about serving environment</p>
+</dd>
+
+          
+<dt>
+<term>ruok</term>
+</dt>
+<dd>
+<p>Tests if server is running in a non-error state. The server
+              will respond with imok if it is running. Otherwise it will not
+              respond at all.</p>
+<p>A response of "imok" does not necessarily indicate that the
+              server has joined the quorum, just that the server process is active
+              and bound to the specified client port. Use "stat" for details on
+              state wrt quorum and client connection information.</p>
+</dd>
+
+          
+<dt>
+<term>srst</term>
+</dt>
+<dd>
+<p>Reset server statistics.</p>
+</dd>
+
+          
+<dt>
+<term>srvr</term>
+</dt>
+<dd>
+<p>
+<strong>New in 3.3.0:</strong> Lists
+              full details for the server.</p>
+</dd>
+
+          
+<dt>
+<term>stat</term>
+</dt>
+<dd>
+<p>Lists brief details for the server and connected
+              clients.</p>
+</dd>
+
+          
+<dt>
+<term>wchs</term>
+</dt>
+<dd>
+<p>
+<strong>New in 3.3.0:</strong> Lists
+              brief information on watches for the server.</p>
+</dd>
+
+          
+<dt>
+<term>wchc</term>
+</dt>
+<dd>
+<p>
+<strong>New in 3.3.0:</strong> Lists
+              detailed information on watches for the server, by
+              session.  This outputs a list of sessions(connections)
+              with associated watches (paths). Note, depending on the
+              number of watches this operation may be expensive (ie
+              impact server performance), use it carefully.</p>
+</dd>
+
+          
+<dt>
+<term>dirs</term>
+</dt>
+<dd>
+<p>
+<strong>New in 3.5.1:</strong>
+                Shows the total size of snapshot and log files in bytes
+              </p>
+</dd>
+
+          
+<dt>
+<term>wchp</term>
+</dt>
+<dd>
+<p>
+<strong>New in 3.3.0:</strong> Lists
+              detailed information on watches for the server, by path.
+              This outputs a list of paths (znodes) with associated
+              sessions. Note, depending on the number of watches this
+              operation may be expensive (ie impact server performance),
+              use it carefully.</p>
+</dd>
+
+
+          
+<dt>
+<term>mntr</term>
+</dt>
+<dd>
+<p>
+<strong>New in 3.4.0:</strong> Outputs a list 
+              of variables that could be used for monitoring the health of the cluster.</p>
+<pre class="code">$ echo mntr | nc localhost 2185
+
+              zk_version  3.4.0
+              zk_avg_latency  0
+              zk_max_latency  0
+              zk_min_latency  0
+              zk_packets_received 70
+              zk_packets_sent 69
+              zk_outstanding_requests 0
+              zk_server_state leader
+              zk_znode_count   4
+              zk_watch_count  0
+              zk_ephemerals_count 0
+              zk_approximate_data_size    27
+              zk_followers    4                   - only exposed by the Leader
+              zk_synced_followers 4               - only exposed by the Leader
+              zk_pending_syncs    0               - only exposed by the Leader
+              zk_open_file_descriptor_count 23    - only available on Unix platforms
+              zk_max_file_descriptor_count 1024   - only available on Unix platforms
+              </pre>
+<p>The output is compatible with java properties format and the content 
+              may change over time (new keys added). Your scripts should expect changes.</p>
+<p>ATTENTION: Some of the keys are platform specific and some of the keys are only exported by the Leader. </p>
+<p>The output contains multiple lines with the following format:</p>
+<pre class="code">key \t value</pre>
 </dd>
 
           
@@ -1668,305 +2365,42 @@ server.3=zoo3:2888:3888</pre>
 </dd>
         
 </dl>
-<a name="Experimental+Options%2FFeatures"></a>
-<h4>Experimental Options/Features</h4>
-<p>New features that are currently considered experimental.</p>
-<dl>
-          
-<dt>
-<term>Read Only Mode Server</term>
-</dt>
-<dd>
-<p>(Java system property: <strong>readonlymode.enabled</strong>)</p>
-<p>
-<strong>New in 3.4.0:</strong>
-              Setting this value to true enables Read Only Mode server
-              support (disabled by default). ROM allows clients
-              sessions which requested ROM support to connect to the
-              server even when the server might be partitioned from
-              the quorum. In this mode ROM clients can still read
-              values from the ZK service, but will be unable to write
-              values and see changes from other clients. See
-              ZOOKEEPER-784 for more details.
-              </p>
-</dd>
-
-        
-</dl>
-<a name="Unsafe+Options"></a>
-<h4>Unsafe Options</h4>
-<p>The following options can be useful, but be careful when you use
-        them. The risk of each is explained along with the explanation of what
-        the variable does.</p>
-<dl>
-          
-<dt>
-<term>forceSync</term>
-</dt>
-<dd>
-<p>(Java system property: <strong>zookeeper.forceSync</strong>)</p>
-<p>Requires updates to be synced to media of the transaction
-              log before finishing processing the update. If this option is
-              set to no, ZooKeeper will not require updates to be synced to
-              the media.</p>
-</dd>
-
-          
-<dt>
-<term>jute.maxbuffer:</term>
-</dt>
-<dd>
-<p>(Java system property:<strong>
-              jute.maxbuffer</strong>)</p>
-<p>This option can only be set as a Java system property.
-              There is no zookeeper prefix on it. It specifies the maximum
-              size of the data that can be stored in a znode. The default is
-              0xfffff, or just under 1M. If this option is changed, the system
-              property must be set on all servers and clients otherwise
-              problems will arise. This is really a sanity check. ZooKeeper is
-              designed to store data on the order of kilobytes in size.</p>
-</dd>
-
-          
-<dt>
-<term>skipACL</term>
-</dt>
-<dd>
-<p>(Java system property: <strong>zookeeper.skipACL</strong>)</p>
-<p>Skips ACL checks. This results in a boost in throughput,
-              but opens up full access to the data tree to everyone.</p>
-</dd>
-
-          
-<dt>
-<term>quorumListenOnAllIPs</term>
-</dt>
-<dd>
-<p>When set to true the ZooKeeper server will listen  
-              for connections from its peers on all available IP addresses,
-              and not only the address configured in the server list of the
-              configuration file. It affects the connections handling the 
-              ZAB protocol and the Fast Leader Election protocol. Default
-              value is <strong>false</strong>.</p>
-</dd>
-
-        
-</dl>
-<a name="Communication+using+the+Netty+framework"></a>
-<h4>Communication using the Netty framework</h4>
-<p>
-<strong>New in
-            3.4:</strong> <a href="http://jboss.org/netty">Netty</a>
-            is an NIO based client/server communication framework, it
-            simplifies (over NIO being used directly) many of the
-            complexities of network level communication for java
-            applications. Additionally the Netty framework has built
-            in support for encryption (SSL) and authentication
-            (certificates). These are optional features and can be
-            turned on or off individually.
-        </p>
-<p>Prior to version 3.4 ZooKeeper has always used NIO
-            directly, however in versions 3.4 and later Netty is
-            supported as an option to NIO (replaces). NIO continues to
-            be the default, however Netty based communication can be
-            used in place of NIO by setting the environment variable
-            "zookeeper.serverCnxnFactory" to
-            "org.apache.zookeeper.server.NettyServerCnxnFactory". You
-            have the option of setting this on either the client(s) or
-            server(s), typically you would want to set this on both,
-            however that is at your discretion.
-        </p>
-<p>
-          TBD - tuning options for netty - currently there are none that are netty specific but we should add some. Esp around max bound on the number of reader worker threads netty creates.
-        </p>
-<p>
-          TBD - how to manage encryption
-        </p>
-<p>
-          TBD - how to manage certificates
-        </p>
-<a name="sc_zkCommands"></a>
-<h3 class="h4">ZooKeeper Commands: The Four Letter Words</h3>
-<p>ZooKeeper responds to a small set of commands. Each command is
-      composed of four letters. You issue the commands to ZooKeeper via telnet
-      or nc, at the client port.</p>
-<p>Three of the more interesting commands: "stat" gives some
-      general information about the server and connected clients,
-      while "srvr" and "cons" give extended details on server and
-      connections respectively.</p>
-<dl>
-        
-<dt>
-<term>conf</term>
-</dt>
-<dd>
-<p>
-<strong>New in 3.3.0:</strong> Print
-            details about serving configuration.</p>
-</dd>
-
-        
-<dt>
-<term>cons</term>
-</dt>
-<dd>
-<p>
-<strong>New in 3.3.0:</strong> List
-            full connection/session details for all clients connected
-            to this server. Includes information on numbers of packets
-            received/sent, session id, operation latencies, last
-            operation performed, etc...</p>
-</dd>
-
-        
-<dt>
-<term>crst</term>
-</dt>
-<dd>
-<p>
-<strong>New in 3.3.0:</strong> Reset
-            connection/session statistics for all connections.</p>
-</dd>
-
-        
-<dt>
-<term>dump</term>
-</dt>
-<dd>
-<p>Lists the outstanding sessions and ephemeral nodes. This
-            only works on the leader.</p>
-</dd>
-
-        
-<dt>
-<term>envi</term>
-</dt>
-<dd>
-<p>Print details about serving environment</p>
-</dd>
-
-        
-<dt>
-<term>ruok</term>
-</dt>
-<dd>
-<p>Tests if server is running in a non-error state. The server
-            will respond with imok if it is running. Otherwise it will not
-            respond at all.</p>
-<p>A response of "imok" does not necessarily indicate that the
-            server has joined the quorum, just that the server process is active
-            and bound to the specified client port. Use "stat" for details on
-            state wrt quorum and client connection information.</p>
-</dd>
-
-        
-<dt>
-<term>srst</term>
-</dt>
-<dd>
-<p>Reset server statistics.</p>
-</dd>
-
-        
-<dt>
-<term>srvr</term>
-</dt>
-<dd>
-<p>
-<strong>New in 3.3.0:</strong> Lists
-            full details for the server.</p>
-</dd>
-
-        
-<dt>
-<term>stat</term>
-</dt>
-<dd>
-<p>Lists brief details for the server and connected
-            clients.</p>
-</dd>
-
-        
-<dt>
-<term>wchs</term>
-</dt>
-<dd>
-<p>
-<strong>New in 3.3.0:</strong> Lists
-            brief information on watches for the server.</p>
-</dd>
-
-        
-<dt>
-<term>wchc</term>
-</dt>
-<dd>
-<p>
-<strong>New in 3.3.0:</strong> Lists
-            detailed information on watches for the server, by
-            session.  This outputs a list of sessions(connections)
-            with associated watches (paths). Note, depending on the
-            number of watches this operation may be expensive (ie
-            impact server performance), use it carefully.</p>
-</dd>
-
-        
-<dt>
-<term>wchp</term>
-</dt>
-<dd>
-<p>
-<strong>New in 3.3.0:</strong> Lists
-            detailed information on watches for the server, by path.
-            This outputs a list of paths (znodes) with associated
-            sessions. Note, depending on the number of watches this
-            operation may be expensive (ie impact server performance),
-            use it carefully.</p>
-</dd>
-
-
-        
-<dt>
-<term>mntr</term>
-</dt>
-<dd>
-<p>
-<strong>New in 3.4.0:</strong> Outputs a list 
-            of variables that could be used for monitoring the health of the cluster.</p>
-<pre class="code">$ echo mntr | nc localhost 2185
-
-zk_version  3.4.0
-zk_avg_latency  0
-zk_max_latency  0
-zk_min_latency  0
-zk_packets_received 70
-zk_packets_sent 69
-zk_outstanding_requests 0
-zk_server_state leader
-zk_znode_count   4
-zk_watch_count  0
-zk_ephemerals_count 0
-zk_approximate_data_size    27
-zk_followers    4                   - only exposed by the Leader
-zk_synced_followers 4               - only exposed by the Leader
-zk_pending_syncs    0               - only exposed by the Leader
-zk_open_file_descriptor_count 23    - only available on Unix platforms
-zk_max_file_descriptor_count 1024   - only available on Unix platforms
-zk_fsync_threshold_exceed_count	0
-</pre>
-<p>The output is compatible with java properties format and the content 
-        may change over time (new keys added). Your scripts should expect changes.</p>
-<p>ATTENTION: Some of the keys are platform specific and some of the keys are only exported by the Leader. </p>
-<p>The output contains multiple lines with the following format:</p>
-<pre class="code">key \t value</pre>
-</dd>
-      
-</dl>
 <p>Here's an example of the <strong>ruok</strong>
-      command:</p>
+        command:</p>
 <pre class="code">$ echo ruok | nc 127.0.0.1 5111
-imok
-</pre>
+        imok
+        </pre>
+<a name="sc_adminserver"></a>
+<h4>The AdminServer</h4>
+<p>
+<strong>New in 3.5.0: </strong>The AdminServer is
+        an embedded Jetty server that provides an HTTP interface to the four
+        letter word commands.  By default, the server is started on port 8080,
+        and commands are issued by going to the URL "/commands/[command name]",
+        e.g., http://localhost:8080/commands/stat.  The command response is
+        returned as JSON.  Unlike the original protocol, commands are not
+        restricted to four-letter names, and commands can have multiple names;
+        for instance, "stmk" can also be referred to as "set_trace_mask".  To
+        view a list of all available commands, point a browser to the URL
+        /commands (e.g., http://localhost:8080/commands).  See the <a href="#sc_adminserver_config">AdminServer configuration options</a>
+        for how to change the port and URLs.</p>
+<p>The AdminServer is enabled by default, but can be disabled by either:</p>
+<ul>
+          
+<li>
+<p>Setting the zookeeper.admin.enableServer system
+          property to false.</p>
+</li>
+          
+<li>
+<p>Removing Jetty from the classpath.  (This option is
+          useful if you would like to override ZooKeeper's jetty
+          dependency.)</p>
+</li>
+        
+</ul>
+<p>Note that the TCP four letter word interface is still available if
+        the AdminServer is disabled.</p>
 <a name="sc_dataFileManagement"></a>
 <h3 class="h4">Data File Management</h3>
 <p>ZooKeeper stores its data in a data directory and its transaction

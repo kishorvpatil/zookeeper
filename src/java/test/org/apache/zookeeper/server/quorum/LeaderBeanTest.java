@@ -54,13 +54,13 @@ public class LeaderBeanTest {
     public void setUp() throws IOException {
         qp = new QuorumPeer();
         QuorumVerifier quorumVerifierMock = mock(QuorumVerifier.class);
-        qp.setQuorumVerifier(quorumVerifierMock);
+        qp.setQuorumVerifier(quorumVerifierMock, false);
         File tmpDir = ClientBase.createTmpDir();
         fileTxnSnapLog = new FileTxnSnapLog(new File(tmpDir, "data"),
                 new File(tmpDir, "data_txnlog"));
         ZKDatabase zkDb = new ZKDatabase(fileTxnSnapLog);
 
-        zks = new LeaderZooKeeperServer(fileTxnSnapLog, qp, null, zkDb);
+        zks = new LeaderZooKeeperServer(fileTxnSnapLog, qp, zkDb);
         leader = new Leader(qp, zks);
         leaderBean = new LeaderBean(leader, zks);
     }

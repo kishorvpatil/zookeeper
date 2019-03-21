@@ -31,7 +31,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class MaxCnxnsTest extends ClientBase {
-    final private int numCnxns = 30;
+    final private static int numCnxns = 30;
     AtomicInteger numConnected = new AtomicInteger(0);
     String host;
     int port;
@@ -43,11 +43,9 @@ public class MaxCnxnsTest extends ClientBase {
     }
 
     class CnxnThread extends Thread {
-        int i;
-        SocketChannel socket;
+
         public CnxnThread(int i) {
             super("CnxnThread-"+i);
-            this.i = i;
         }
 
         public void run() {
@@ -97,13 +95,12 @@ public class MaxCnxnsTest extends ClientBase {
             }
             catch (IOException io) {
                 // "Connection reset by peer"
-            }
-            finally {
+            } finally {
                 if (sChannel != null) {
                     try {
                         sChannel.close();
-                    }
-                    catch (Exception e) {
+                    } catch (Exception e) {
+                        // Do nothing
                     }
                 }
             }

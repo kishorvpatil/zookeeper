@@ -35,6 +35,7 @@ import org.apache.zookeeper.server.quorum.QuorumPeer.QuorumServer;
 import org.junit.Assert;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class LETest extends ZKTestCase {
     private static final Logger LOG = LoggerFactory.getLogger(LETest.class);
     volatile Vote votes[];
@@ -98,7 +99,9 @@ public class LETest extends ZKTestCase {
         votes = new Vote[count];
         for(int i = 0; i < count; i++) {
             peers.put(Long.valueOf(i),
-                      new QuorumServer(i, "127.0.0.1", PortAssignment.unique(), 0, null));
+                    new QuorumServer(i,
+                            new InetSocketAddress("127.0.0.1",
+                                    PortAssignment.unique())));
             tmpdir[i] = ClientBase.createTmpDir();
             port[i] = PortAssignment.unique();
         }

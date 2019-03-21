@@ -23,8 +23,6 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
-import java.util.Random;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.zookeeper.PortAssignment;
@@ -50,13 +48,8 @@ public class FLEZeroWeightTest extends ZKTestCase {
     ArrayList<LEThread> threads;
     File tmpdir[];
     int port[];
-    Object finalObj;
 
     volatile Vote votes[];
-    volatile boolean leaderDies;
-    volatile long leader = -1;
-    Random rand = new Random();
-
 
     @Before
     public void setUp() throws Exception {
@@ -67,7 +60,6 @@ public class FLEZeroWeightTest extends ZKTestCase {
         votes = new Vote[count];
         tmpdir = new File[count];
         port = new int[count];
-        finalObj = new Object();
 
         String config = "group.1=0:1:2\n" +
         "group.2=3:4:5\n" +
@@ -148,17 +140,18 @@ public class FLEZeroWeightTest extends ZKTestCase {
 
     @Test
     public void testZeroWeightQuorum() throws Exception {
-        FastLeaderElection le[] = new FastLeaderElection[count];
-
         LOG.info("TestZeroWeightQuorum: " + getTestName()+ ", " + count);
         for(int i = 0; i < count; i++) {
-            peers.put(Long.valueOf(i),
-                      new QuorumServer(i, "0.0.0.0", PortAssignment.unique(), PortAssignment.unique(), null));
+            InetSocketAddress addr1 = new InetSocketAddress("127.0.0.1",PortAssignment.unique());
+            InetSocketAddress addr2 = new InetSocketAddress("127.0.0.1",PortAssignment.unique());
+            InetSocketAddress addr3 = new InetSocketAddress("127.0.0.1",PortAssignment.unique());
+            port[i] = addr3.getPort();
+            qp.setProperty("server."+i, "127.0.0.1:"+addr1.getPort()+":"+addr2.getPort()+";"+port[i]);
+            peers.put(Long.valueOf(i), new QuorumServer(i, addr1, addr2, addr3));
             tmpdir[i] = ClientBase.createTmpDir();
-            port[i] = PortAssignment.unique();
         }
 
-        for(int i = 0; i < le.length; i++) {
+        for(int i = 0; i < count; i++) {
             QuorumHierarchical hq = new QuorumHierarchical(qp);
             QuorumPeer peer = new QuorumPeer(peers, tmpdir[i], tmpdir[i], port[i], 3, i, 1000, 2, 2, hq);
             peer.startLeaderElection();

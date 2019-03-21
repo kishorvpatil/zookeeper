@@ -20,8 +20,6 @@ package org.apache.zookeeper.server.quorum;
 
 import org.apache.zookeeper.server.ZooKeeperServerBean;
 import org.apache.zookeeper.server.ZooKeeperServer;
-import org.apache.zookeeper.server.quorum.LearnerHandler;
-import org.apache.zookeeper.server.quorum.Leader;
 
 /**
  * Leader MBean interface implementation.

@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -35,6 +35,7 @@ import java.util.concurrent.Semaphore;
 
 import java.util.concurrent.TimeUnit;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.zookeeper.common.Time;
 import org.slf4j.Logger;
@@ -209,12 +210,13 @@ public class AuthFastLeaderElection implements Election {
         final ConcurrentHashMap<Long, Semaphore> ackMutex;
         final ConcurrentHashMap<InetSocketAddress, ConcurrentHashMap<Long, Long>> addrChallengeMap;
 
-        class WorkerReceiver implements Runnable {
+        class WorkerReceiver extends ZooKeeperThread {
 
             DatagramSocket mySocket;
             Messenger myMsg;
 
             WorkerReceiver(DatagramSocket s, Messenger msg) {
+                super("WorkerReceiver-" + s.getRemoteSocketAddress());
                 mySocket = s;
                 myMsg = msg;
             }
@@ -276,6 +278,9 @@ public class AuthFastLeaderElection implements Election {
                     case 2:
                         ackstate = QuorumPeer.ServerState.FOLLOWING;
                         break;
+                    default:
+                        LOG.warn("unknown type " + responseBuffer.getInt());
+                        break;
                     }
 
                     Vote current = self.getCurrentVote();
@@ -285,7 +290,7 @@ public class AuthFastLeaderElection implements Election {
                         // Receive challenge request
                         ToSend c = new ToSend(ToSend.mType.challenge, tag,
                                 current.getId(), current.getZxid(),
-                                logicalclock, self.getPeerState(),
+                                logicalclock.get(), self.getPeerState(),
                                 (InetSocketAddress) responsePacket
                                         .getSocketAddress());
                         sendqueue.offer(c);
@@ -329,7 +334,7 @@ public class AuthFastLeaderElection implements Election {
                                         ToSend a = new ToSend(ToSend.mType.ack,
                                                 tag, current.getId(),
                                                 current.getZxid(),
-                                                logicalclock, self.getPeerState(),
+                                                logicalclock.get(), self.getPeerState(),
                                                 addr);
 
                                         sendqueue.offer(a);
@@ -348,7 +353,7 @@ public class AuthFastLeaderElection implements Election {
 
                             ToSend a = new ToSend(ToSend.mType.ack, tag,
                                     current.getId(), current.getZxid(),
-                                    logicalclock, self.getPeerState(),
+                                    logicalclock.get(), self.getPeerState(),
                                     (InetSocketAddress) responsePacket
                                             .getSocketAddress());
 
@@ -400,7 +405,7 @@ public class AuthFastLeaderElection implements Election {
             }
         }
 
-        class WorkerSender implements Runnable {
+        class WorkerSender extends ZooKeeperThread {
 
             Random rand;
             int maxAttempts;
@@ -411,6 +416,7 @@ public class AuthFastLeaderElection implements Election {
              */
 
             WorkerSender(int attempts) {
+                super("WorkerSender");
                 maxAttempts = attempts;
                 rand = new Random(java.lang.Thread.currentThread().getId()
                         + Time.currentElapsedTime());
@@ -662,7 +668,7 @@ public class AuthFastLeaderElection implements Election {
                      * Return message to queue for another attempt later if
                      * epoch hasn't changed.
                      */
-                    if (m.epoch == logicalclock) {
+                    if (m.epoch == logicalclock.get()) {
                         challengeMap.remove(m.tag);
                         sendqueue.offer(m);
                     }
@@ -697,13 +703,11 @@ public class AuthFastLeaderElection implements Election {
                         LOG.warn("Exception while sending ack: ", e);
                     }
                     break;
+                default:
+                    LOG.warn("unknown type " + m.type);
+                    break;
                 }
             }
-        }
-
-        public boolean queueEmpty() {
-            return (sendqueue.isEmpty() || ackset.isEmpty() || recvqueue
-                    .isEmpty());
         }
 
         Messenger(int threads, DatagramSocket s) {
@@ -718,7 +722,7 @@ public class AuthFastLeaderElection implements Election {
             lastEpoch = 0;
 
             for (int i = 0; i < threads; ++i) {
-                Thread t = new ZooKeeperThread(new WorkerSender(3),
+                Thread t = new Thread(new WorkerSender(3),
                         "WorkerSender Thread: " + (i + 1));
                 t.setDaemon(true);
                 t.start();
@@ -730,8 +734,8 @@ public class AuthFastLeaderElection implements Election {
                 addrChallengeMap.put(saddr, new ConcurrentHashMap<Long, Long>());
             }
 
-            Thread t = new ZooKeeperThread(new WorkerReceiver(s, this),
-                    "WorkerReceiver-" + s.getRemoteSocketAddress());
+            Thread t = new Thread(new WorkerReceiver(s, this),
+                    "WorkerReceiver Thread");
             t.start();
         }
 
@@ -739,7 +743,7 @@ public class AuthFastLeaderElection implements Election {
 
     QuorumPeer self;
     int port;
-    volatile long logicalclock; /* Election instance */
+    AtomicLong logicalclock = new AtomicLong(); /* Election instance */
     DatagramSocket mySocket;
     long proposedLeader;
     long proposedZxid;
@@ -774,7 +778,7 @@ public class AuthFastLeaderElection implements Election {
     }
 
     private void leaveInstance() {
-        logicalclock++;
+        logicalclock.incrementAndGet();
     }
 
     private void sendNotifications() {
@@ -782,7 +786,7 @@ public class AuthFastLeaderElection implements Election {
 
             ToSend notmsg = new ToSend(ToSend.mType.notification,
                     AuthFastLeaderElection.sequencer++, proposedLeader,
-                    proposedZxid, logicalclock, QuorumPeer.ServerState.LOOKING,
+                    proposedZxid, logicalclock.get(), QuorumPeer.ServerState.LOOKING,
                     self.getView().get(server.id).electionAddr);
 
             sendqueue.offer(notmsg);
@@ -798,7 +802,7 @@ public class AuthFastLeaderElection implements Election {
 
     }
 
-    private boolean termPredicate(HashMap<InetSocketAddress, Vote> votes,
+    private boolean termPredicate(Map<InetSocketAddress, Vote> votes,
             long l, long zxid) {
 
 
@@ -848,7 +852,7 @@ public class AuthFastLeaderElection implements Election {
             HashMap<InetSocketAddress, Vote> outofelection = 
                 new HashMap<InetSocketAddress, Vote>();
     
-            logicalclock++;
+            logicalclock.incrementAndGet();
     
             proposedLeader = self.getId();
             proposedZxid = self.getLastLoggedZxid();
@@ -878,15 +882,15 @@ public class AuthFastLeaderElection implements Election {
                 } else
                     switch (n.state) {
                     case LOOKING:
-                        if (n.epoch > logicalclock) {
-                            logicalclock = n.epoch;
+                        if (n.epoch > logicalclock.get()) {
+                            logicalclock.set( n.epoch );
                             recvset.clear();
                             if (totalOrderPredicate(n.leader, n.zxid)) {
                                 proposedLeader = n.leader;
                                 proposedZxid = n.zxid;
                             }
                             sendNotifications();
-                        } else if (n.epoch < logicalclock) {
+                        } else if (n.epoch < logicalclock.get()) {
                             break;
                         } else if (totalOrderPredicate(n.leader, n.zxid)) {
                             proposedLeader = n.leader;

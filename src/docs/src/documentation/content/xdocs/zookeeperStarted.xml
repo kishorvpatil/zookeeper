@@ -192,7 +192,7 @@ ZooKeeper host:port cmd args
         delquota [-n|-b] path
         quit
         printwatches on|off
-        createpath data acl
+        create path data acl
         stat path [watch]
         listquota path
         history
@@ -202,6 +202,7 @@ ZooKeeper host:port cmd args
         redo cmdno
         addauth scheme auth
         delete path [version]
+        deleteall path
         setquota -n|-b val path
 
 ]]>        </programlisting>

@@ -19,14 +19,11 @@
 package org.apache.zookeeper.server.quorum;
 
 import org.apache.zookeeper.server.quorum.QuorumPeer.ServerState;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public class Vote {
-    private static final Logger LOG = LoggerFactory.getLogger(Vote.class);
     
-    public Vote(long id, 
+    public Vote(long id,
                     long zxid) {
         this.version = 0x0;
         this.id = id;
@@ -36,8 +33,8 @@ public class Vote {
         this.state = ServerState.LOOKING;
     }
     
-    public Vote(long id, 
-                    long zxid, 
+    public Vote(long id,
+                    long zxid,
                     long peerEpoch) {
         this.version = 0x0;
         this.id = id;
@@ -47,9 +44,9 @@ public class Vote {
         this.state = ServerState.LOOKING;
     }
 
-    public Vote(long id, 
-                    long zxid, 
-                    long electionEpoch, 
+    public Vote(long id,
+                    long zxid,
+                    long electionEpoch,
                     long peerEpoch) {
         this.version = 0x0;
         this.id = id;
@@ -60,10 +57,10 @@ public class Vote {
     }
     
     public Vote(int version,
-                    long id, 
-                    long zxid, 
-                    long electionEpoch, 
-                    long peerEpoch, 
+                    long id,
+                    long zxid,
+                    long electionEpoch,
+                    long peerEpoch,
                     ServerState state) {
         this.version = version;
         this.id = id;
@@ -73,10 +70,10 @@ public class Vote {
         this.peerEpoch = peerEpoch;
     }
     
-    public Vote(long id, 
-                    long zxid, 
-                    long electionEpoch, 
-                    long peerEpoch, 
+    public Vote(long id,
+                    long zxid,
+                    long electionEpoch,
+                    long peerEpoch,
                     ServerState state) {
         this.id = id;
         this.zxid = zxid;
@@ -85,9 +82,9 @@ public class Vote {
         this.peerEpoch = peerEpoch;
         this.version = 0x0;
     }
-    
+
     final private int version;
-    
+
     final private long id;
     
     final private long zxid;
@@ -99,7 +96,7 @@ public class Vote {
     public int getVersion() {
         return version;
     }
-    
+
     public long getId() {
         return id;
     }
@@ -128,31 +125,11 @@ public class Vote {
             return false;
         }
         Vote other = (Vote) o;
-        
-        
-        /*
-         * There are two things going on in the logic below.
-         * First, we compare votes of servers out of election
-         * using only id and peer epoch. Second, if one version
-         * is 0x0 and the other isn't, then we only use the
-         * leader id. This case is here to enable rolling upgrades.
-         * 
-         * {@see https://issues.apache.org/jira/browse/ZOOKEEPER-1805}
-         */
-        if ((state == ServerState.LOOKING) ||
-                (other.state == ServerState.LOOKING)) {
-            return (id == other.id
+        return (id == other.id
                     && zxid == other.zxid
                     && electionEpoch == other.electionEpoch
                     && peerEpoch == other.peerEpoch);
-        } else {
-            if ((version > 0x0) ^ (other.version > 0x0)) {
-                return id == other.id;
-            } else {
-                return (id == other.id
-                        && peerEpoch == other.peerEpoch);
-            }
-        } 
+
     }
 
     @Override
@@ -161,9 +138,6 @@ public class Vote {
     }
 
     public String toString() {
-        return String.format("(%d, %s, %s)",
-                                id,
-                                Long.toHexString(zxid),
-                                Long.toHexString(peerEpoch));
+        return "(" + id + ", " + Long.toHexString(zxid) + ", " + Long.toHexString(peerEpoch) + ")";
     }
 }

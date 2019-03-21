@@ -18,6 +18,13 @@
 
 package org.apache.zookeeper.server.persistence;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.PosixParser;
 import org.apache.jute.BinaryInputArchive;
 import org.apache.jute.BinaryOutputArchive;
 import org.apache.jute.Record;
@@ -39,7 +46,6 @@ import java.util.zip.Adler32;
 import java.util.zip.Checksum;
 
 import static org.apache.zookeeper.server.persistence.FileTxnLog.TXNLOG_MAGIC;
-import static org.apache.zookeeper.server.persistence.TxnLogToolkitCliParser.printHelpAndExit;
 
 public class TxnLogToolkit implements Closeable {
 
@@ -59,9 +65,15 @@ public class TxnLogToolkit implements Closeable {
 
     static class TxnLogToolkitParseException extends TxnLogToolkitException {
         private static final long serialVersionUID = 1L;
+        private Options options;
 
-        TxnLogToolkitParseException(int exitCode, String message, Object... params) {
+        TxnLogToolkitParseException(Options options, int exitCode, String message, Object... params) {
             super(exitCode, message, params);
+            this.options = options;
+        }
+
+        Options getOptions() {
+            return options;
         }
     }
 
@@ -83,18 +95,15 @@ public class TxnLogToolkit implements Closeable {
      * @param args Command line arguments
      */
     public static void main(String[] args) throws Exception {
-        final TxnLogToolkit lt = parseCommandLine(args);
-        try {
+        try (final TxnLogToolkit lt = parseCommandLine(args)) {
             lt.dump(new Scanner(System.in));
             lt.printStat();
         } catch (TxnLogToolkitParseException e) {
             System.err.println(e.getMessage() + "\n");
-            printHelpAndExit(e.getExitCode());
+            printHelpAndExit(e.getExitCode(), e.getOptions());
         } catch (TxnLogToolkitException e) {
             System.err.println(e.getMessage());
             System.exit(e.getExitCode());
-        } finally {
-            lt.close();
         }
     }
 
@@ -252,9 +261,42 @@ public class TxnLogToolkit implements Closeable {
     }
 
     private static TxnLogToolkit parseCommandLine(String[] args) throws TxnLogToolkitException, FileNotFoundException {
-        TxnLogToolkitCliParser parser = new TxnLogToolkitCliParser();
-        parser.parse(args);
-        return new TxnLogToolkit(parser.isRecoveryMode(), parser.isVerbose(), parser.getTxnLogFileName(), parser.isForce());
+        CommandLineParser parser = new PosixParser();
+        Options options = new Options();
+
+        Option helpOpt = new Option("h", "help", false, "Print help message");
+        options.addOption(helpOpt);
+
+        Option recoverOpt = new Option("r", "recover", false, "Recovery mode. Re-calculate CRC for broken entries.");
+        options.addOption(recoverOpt);
+
+        Option quietOpt = new Option("v", "verbose", false, "Be verbose in recovery mode: print all entries, not just fixed ones.");
+        options.addOption(quietOpt);
+
+        Option dumpOpt = new Option("d", "dump", false, "Dump mode. Dump all entries of the log file. (this is the default)");
+        options.addOption(dumpOpt);
+
+        Option forceOpt = new Option("y", "yes", false, "Non-interactive mode: repair all CRC errors without asking");
+        options.addOption(forceOpt);
+
+        try {
+            CommandLine cli = parser.parse(options, args);
+            if (cli.hasOption("help")) {
+                printHelpAndExit(0, options);
+            }
+            if (cli.getArgs().length < 1) {
+                printHelpAndExit(1, options);
+            }
+            return new TxnLogToolkit(cli.hasOption("recover"), cli.hasOption("verbose"), cli.getArgs()[0], cli.hasOption("yes"));
+        } catch (ParseException e) {
+            throw new TxnLogToolkitParseException(options, 1, e.getMessage());
+        }
+    }
+
+    private static void printHelpAndExit(int exitCode, Options options) {
+        HelpFormatter help = new HelpFormatter();
+        help.printHelp(120,"TxnLogToolkit [-dhrv] <txn_log_file_name>", "", options, "");
+        System.exit(exitCode);
     }
 
     private void printStat() {

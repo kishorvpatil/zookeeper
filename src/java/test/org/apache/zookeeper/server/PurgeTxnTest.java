@@ -33,8 +33,6 @@ import org.apache.zookeeper.data.Stat;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.PortAssignment;
-import org.apache.zookeeper.WatchedEvent;
-import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZKTestCase;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
@@ -51,7 +49,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PurgeTxnTest extends ZKTestCase implements  Watcher {
+public class PurgeTxnTest extends ZKTestCase {
     private static final Logger LOG = LoggerFactory.getLogger(PurgeTxnTest.class);
     private static String HOSTPORT = "127.0.0.1:" + PortAssignment.unique();
     private static final int CONNECTION_TIMEOUT = 3000;
@@ -80,7 +78,7 @@ public class PurgeTxnTest extends ZKTestCase implements  Watcher {
         f.startup(zks);
         Assert.assertTrue("waiting for server being up ",
                 ClientBase.waitForServerUp(HOSTPORT,CONNECTION_TIMEOUT));
-        ZooKeeper zk = new ZooKeeper(HOSTPORT, CONNECTION_TIMEOUT, this);
+        ZooKeeper zk = ClientBase.createZKClient(HOSTPORT);
         try {
             for (int i = 0; i< 2000; i++) {
                 zk.create("/invalidsnap-" + i, new byte[0], Ids.OPEN_ACL_UNSAFE,
@@ -127,7 +125,7 @@ public class PurgeTxnTest extends ZKTestCase implements  Watcher {
         f.startup(zks);
         Assert.assertTrue("waiting for server being up ",
                 ClientBase.waitForServerUp(HOSTPORT, CONNECTION_TIMEOUT));
-        final ZooKeeper zk = new ZooKeeper(HOSTPORT, CONNECTION_TIMEOUT, this);
+        final ZooKeeper zk = ClientBase.createZKClient(HOSTPORT);
         final CountDownLatch doPurge = new CountDownLatch(1);
         final CountDownLatch purgeFinished = new CountDownLatch(1);
         final AtomicBoolean opFailed = new AtomicBoolean(false);
@@ -596,9 +594,4 @@ public class PurgeTxnTest extends ZKTestCase implements  Watcher {
         }
         return znodes;
     }
-
-    public void process(WatchedEvent event) {
-        // do nothing
-    }
-
 }

@@ -33,7 +33,6 @@ import javax.management.remote.JMXConnectorServer;
 import javax.management.remote.JMXConnectorServerFactory;
 import javax.management.remote.JMXServiceURL;
 
-import junit.framework.TestCase;
 
 import org.apache.zookeeper.jmx.CommonNames;
 import org.apache.zookeeper.jmx.MBeanRegistry;
@@ -50,7 +49,7 @@ public class JMXEnv {
     public static void setUp() throws IOException {
         MBeanServer mbs = MBeanRegistry.getInstance().getPlatformMBeanServer();
         
-        JMXServiceURL url = new JMXServiceURL("service:jmx:rmi://");
+        JMXServiceURL url = new JMXServiceURL("service:jmx:rmi://127.0.0.1");
         cs = JMXConnectorServerFactory.newJMXConnectorServer(url, null, mbs);
         cs.start();
 
@@ -126,7 +125,7 @@ public class JMXEnv {
                 beans.removeAll(found);
             }
         } while ((expectedNames.length != found.size()) && (nTry < 600));
-        TestCase.assertEquals("expected " + Arrays.toString(expectedNames),
+        Assert.assertEquals("expected " + Arrays.toString(expectedNames),
                 expectedNames.length, found.size());
         return beans;
     }
@@ -149,7 +148,7 @@ public class JMXEnv {
         for (ObjectName bean : beans) {
             LOG.info("unexpected:" + bean.toString());
         }
-        TestCase.assertEquals(0, beans.size());
+        Assert.assertEquals(0, beans.size());
         return beans;
     }
     
@@ -191,7 +190,7 @@ public class JMXEnv {
             for (ObjectName bean : beans) {
                 LOG.info("bean:" + bean.toString());
             }
-            TestCase.fail(unexpectedName);
+            Assert.fail(unexpectedName);
         }
     }
 
@@ -223,7 +222,6 @@ public class JMXEnv {
      * 
      * @throws IOException
      * @throws InterruptedException
-     * 
      */
     public static Set<ObjectName> ensureParent(String... expectedNames)
             throws IOException, InterruptedException {
@@ -256,24 +254,9 @@ public class JMXEnv {
                 beans.removeAll(found);
             }
         } while (expectedNames.length != found.size() && nTry < 120);
-        TestCase.assertEquals("expected " + Arrays.toString(expectedNames),
+        Assert.assertEquals("expected " + Arrays.toString(expectedNames),
                 expectedNames.length, found.size());
         return beans;
-    }
-
-    /**
-     * Comparing that the given name exists in the bean. For component beans,
-     * the component name will be present at the end of the bean name
-     * 
-     * For example 'StandaloneServer' will present in the bean name like
-     * 'org.apache.ZooKeeperService:name0=StandaloneServer_port-1'
-     */
-    private static boolean compare(String bean, String name) {
-        String[] names = bean.split("=");
-        if (names.length > 0 && names[names.length - 1].contains(name)) {
-            return true;
-        }
-        return false;
     }
 
     /**
@@ -322,4 +305,18 @@ public class JMXEnv {
         return value;
     }
 
+    /**
+     * Comparing that the given name exists in the bean. For component beans,
+     * the component name will be present at the end of the bean name
+     * 
+     * For example 'StandaloneServer' will present in the bean name like
+     * 'org.apache.ZooKeeperService:name0=StandaloneServer_port-1'
+     */
+    private static boolean compare(String bean, String name) {
+        String[] names = bean.split("=");
+        if (names.length > 0 && names[names.length - 1].contains(name)) {
+            return true;
+        }
+        return false;
+    }
 }

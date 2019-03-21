@@ -22,21 +22,26 @@
 package org.apache.zookeeper.server.quorum;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
+import java.util.Properties;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZKTestCase;
+import org.apache.zookeeper.common.PathUtils;
+import org.apache.zookeeper.server.admin.AdminServer.AdminServerException;
+import org.apache.zookeeper.server.admin.JettyAdminServer;
 import org.apache.zookeeper.test.ClientBase;
 import org.apache.zookeeper.test.QuorumBase;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Has some common functionality for tests that work with QuorumPeers. Override
@@ -60,17 +65,22 @@ public class QuorumPeerTestBase extends ZKTestCase implements Watcher {
             }
         }
     }
-
+    
     public static class MainThread implements Runnable {
         final File confFile;
+        final File tmpDir;
+
+        public static final int UNSET_STATIC_CLIENTPORT = -1;
+        // standalone mode doens't need myid
+        public static final int UNSET_MYID = -1;
+
         volatile TestQPMain main;
-        final File dataDir;
-        CountDownLatch mainFailed;
+
         File baseDir;
-        private final int myid;
-        private final int clientPort;
-        private final String quorumCfgSection;
-        private final Map<String, String> otherConfigs;
+        private int myid;
+        private int clientPort;
+        private String quorumCfgSection;
+        private Map<String, String> otherConfigs;
 
         /**
          * Create a MainThread
@@ -83,7 +93,7 @@ public class QuorumPeerTestBase extends ZKTestCase implements Watcher {
          * @throws IOException
          */
         public MainThread(int myid, int clientPort, String quorumCfgSection,
-                Map<String, String> otherConfigs, int tickTime) throws IOException {
+                          Map<String, String> otherConfigs, int tickTime) throws IOException {
             baseDir = ClientBase.createTmpDir();
             this.myid = myid;
             this.clientPort = clientPort;
@@ -98,13 +108,13 @@ public class QuorumPeerTestBase extends ZKTestCase implements Watcher {
             fwriter.write("initLimit=10\n");
             fwriter.write("syncLimit=5\n");
 
-            dataDir = new File(baseDir, "data");
-            if (!dataDir.mkdir()) {
-                throw new IOException("Unable to mkdir " + dataDir);
+            tmpDir = new File(baseDir, "data");
+            if (!tmpDir.mkdir()) {
+                throw new IOException("Unable to mkdir " + tmpDir);
             }
 
             // Convert windows path to UNIX to avoid problems with "\"
-            String dir = dataDir.toString();
+            String dir = tmpDir.toString();
             String osname = java.lang.System.getProperty("os.name");
             if (osname.toLowerCase().contains("windows")) {
                 dir = dir.replace('\\', '/');
@@ -123,9 +133,158 @@ public class QuorumPeerTestBase extends ZKTestCase implements Watcher {
             fwriter.flush();
             fwriter.close();
 
+            File myidFile = new File(tmpDir, "myid");
+            fwriter = new FileWriter(myidFile);
+            fwriter.write(Integer.toString(myid));
+            fwriter.flush();
+            fwriter.close();
+        }
+
+        public MainThread(int myid, String quorumCfgSection) throws IOException {
+            this(myid, quorumCfgSection, true);
+        }
+
+        public MainThread(int myid, String quorumCfgSection, Integer secureClientPort, boolean writeDynamicConfigFile)
+                throws  IOException {
+            this(myid, UNSET_STATIC_CLIENTPORT, JettyAdminServer.DEFAULT_PORT, secureClientPort,
+                    quorumCfgSection, null, writeDynamicConfigFile, null);
+        }
+
+        public MainThread(int myid, String quorumCfgSection, boolean writeDynamicConfigFile)
+                throws IOException {
+            this(myid, UNSET_STATIC_CLIENTPORT, quorumCfgSection, writeDynamicConfigFile);
+        }
+
+        public MainThread(int myid, int clientPort, String quorumCfgSection, boolean writeDynamicConfigFile)
+                throws IOException {
+            this(myid, clientPort, JettyAdminServer.DEFAULT_PORT, quorumCfgSection, null, writeDynamicConfigFile);
+        }
+
+        public MainThread(int myid, int clientPort, String quorumCfgSection, boolean writeDynamicConfigFile,
+                          String version) throws IOException {
+            this(myid, clientPort, JettyAdminServer.DEFAULT_PORT, quorumCfgSection, null,
+                    writeDynamicConfigFile, version);
+        }
+
+        public MainThread(int myid, int clientPort, String quorumCfgSection, String configs)
+                throws IOException {
+            this(myid, clientPort, JettyAdminServer.DEFAULT_PORT, quorumCfgSection, configs, true);
+        }
+
+        public MainThread(int myid, int clientPort, int adminServerPort, String quorumCfgSection,
+                String configs)  throws IOException {
+            this(myid, clientPort, adminServerPort, quorumCfgSection, configs, true);
+        }
+
+        public MainThread(int myid, int clientPort, int adminServerPort, String quorumCfgSection,
+                String configs, boolean writeDynamicConfigFile)
+                throws IOException {
+            this(myid, clientPort, adminServerPort, quorumCfgSection, configs, writeDynamicConfigFile, null);
+        }
+
+        public MainThread(int myid, int clientPort, int adminServerPort, String quorumCfgSection,
+                          String configs, boolean writeDynamicConfigFile, String version) throws IOException {
+            this(myid, clientPort, adminServerPort, null, quorumCfgSection, configs, writeDynamicConfigFile, version);
+        }
+
+        public MainThread(int myid, int clientPort, int adminServerPort, Integer secureClientPort,
+                          String quorumCfgSection, String configs, boolean writeDynamicConfigFile, String version)
+                throws IOException {
+            tmpDir = ClientBase.createTmpDir();
+            LOG.info("id = " + myid + " tmpDir = " + tmpDir + " clientPort = "
+                    + clientPort + " adminServerPort = " + adminServerPort);
+
+            File dataDir = new File(tmpDir, "data");
+            if (!dataDir.mkdir()) {
+                throw new IOException("Unable to mkdir " + dataDir);
+            }
+
+            confFile = new File(tmpDir, "zoo.cfg");
+
+            FileWriter fwriter = new FileWriter(confFile);
+            fwriter.write("tickTime=4000\n");
+            fwriter.write("initLimit=10\n");
+            fwriter.write("syncLimit=5\n");
+            if(configs != null){
+                fwriter.write(configs);
+            }
+
+            // Convert windows path to UNIX to avoid problems with "\"
+            String dir = PathUtils.normalizeFileSystemPath(dataDir.toString());
+
+            fwriter.write("dataDir=" + dir + "\n");
+            fwriter.write("admin.serverPort=" + adminServerPort + "\n");
+
+            // For backward compatibility test, some tests create dynamic configuration
+            // without setting client port.
+            // This could happen both in static file or dynamic file.
+            if (clientPort != UNSET_STATIC_CLIENTPORT) {
+                fwriter.write("clientPort=" + clientPort + "\n");
+            }
+
+            if (secureClientPort != null) {
+                fwriter.write("secureClientPort=" + secureClientPort + "\n");
+            }
+
+            if (writeDynamicConfigFile) {
+                String dynamicConfigFilename = createDynamicFile(quorumCfgSection, version);
+                fwriter.write("dynamicConfigFile=" + dynamicConfigFilename + "\n");
+            } else {
+                fwriter.write(quorumCfgSection);
+            }
+            fwriter.flush();
+            fwriter.close();
+
             File myidFile = new File(dataDir, "myid");
             fwriter = new FileWriter(myidFile);
             fwriter.write(Integer.toString(myid));
+            fwriter.flush();
+            fwriter.close();
+        }
+
+        private String createDynamicFile(String quorumCfgSection, String version)
+                throws IOException {
+            String filename = "zoo.cfg.dynamic";
+            if( version != null ){
+                filename = filename + "." + version;
+            }
+
+            File dynamicConfigFile = new File(tmpDir, filename);
+            String dynamicConfigFilename = PathUtils.normalizeFileSystemPath(dynamicConfigFile.toString());
+
+            FileWriter fDynamicConfigWriter = new FileWriter(dynamicConfigFile);
+            fDynamicConfigWriter.write(quorumCfgSection);
+            fDynamicConfigWriter.flush();
+            fDynamicConfigWriter.close();
+
+            return dynamicConfigFilename;
+        }
+
+        public File[] getDynamicFiles() {
+            return getFilesWithPrefix("zoo.cfg.dynamic");
+        }
+
+        public File[] getFilesWithPrefix(final String prefix) {
+            return tmpDir.listFiles(new FilenameFilter() {      
+                @Override
+                public boolean accept(File dir, String name) {
+                    return name.startsWith(prefix);
+                }});
+        }
+
+        public File getFileByName(String filename) {
+            File f = new File(tmpDir.getPath(), filename);
+            return f.isFile() ? f : null;
+        }
+
+        public void writeTempDynamicConfigFile(String nextQuorumCfgSection, String version)
+                throws IOException {
+            File nextDynamicConfigFile = new File(tmpDir,
+                    "zoo.cfg" + QuorumPeerConfig.nextDynamicConfigFileSuffix);
+            FileWriter fwriter = new FileWriter(nextDynamicConfigFile);
+            fwriter.write(nextQuorumCfgSection
+                    + "\n"
+                    + "version=" + version);
             fwriter.flush();
             fwriter.close();
         }
@@ -147,7 +306,10 @@ public class QuorumPeerTestBase extends ZKTestCase implements Watcher {
             main = getTestQPMain();
             currentThread = new Thread(this);
             currentThread.start();
-            mainFailed = new CountDownLatch(1);
+        }
+
+        public TestQPMain getTestQPMain() {
+            return new TestQPMain();
         }
 
         public void run() {
@@ -158,8 +320,6 @@ public class QuorumPeerTestBase extends ZKTestCase implements Watcher {
             } catch (Exception e) {
                 // test will still fail even though we just log/ignore
                 LOG.error("unexpected exception in run", e);
-                main.shutdown();
-                mainFailed.countDown();
             } finally {
                 currentThread = null;
             }
@@ -190,9 +350,20 @@ public class QuorumPeerTestBase extends ZKTestCase implements Watcher {
                     .getDataDir());
         }
 
+        public boolean isQuorumPeerRunning() {
+            return main.quorumPeer != null;
+        }
+
+        public String getPropFromStaticFile(String key) throws IOException {
+            Properties props = new Properties();
+            props.load(new FileReader(confFile));
+            return props.getProperty(key, "");
+        }
+
         public QuorumPeer getQuorumPeer() {
             return main.quorumPeer;
         }
+
 
         public void deleteBaseDir() {
             ClientBase.recursiveDelete(baseDir);
@@ -218,8 +389,5 @@ public class QuorumPeerTestBase extends ZKTestCase implements Watcher {
             return confFile;
         }
 
-        public TestQPMain getTestQPMain() {
-            return new TestQPMain();
-        }
     }
 }

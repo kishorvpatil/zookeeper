@@ -46,9 +46,7 @@ public class QuorumKerberosAuthTest extends KerberosSecurityTestcase {
                 + "       keyTab=\"" + keytabFilePath + "\"\n"
                 + "       storeKey=true\n"
                 + "       useTicketCache=false\n"
-                + "       debug=true\n"
-                + "       doNotPrompt=true\n"
-                + "       refreshKrb5Config=true\n"
+                + "       debug=false\n"
                 + "       principal=\"" + KerberosTestUtils.getServerPrincipal() + "\";\n" + "};\n"
                 + "QuorumLearner {\n"
                 + "       com.sun.security.auth.module.Krb5LoginModule required\n"
@@ -56,10 +54,7 @@ public class QuorumKerberosAuthTest extends KerberosSecurityTestcase {
                 + "       keyTab=\"" + keytabFilePath + "\"\n"
                 + "       storeKey=true\n"
                 + "       useTicketCache=false\n"
-                + "       debug=true\n"
-                + "       doNotPrompt=true\n"
-                + "       refreshKrb5Config=true\n"
-                + "       isInitiator=true\n"
+                + "       debug=false\n"
                 + "       principal=\"" + KerberosTestUtils.getLearnerPrincipal() + "\";\n" + "};\n");
         setupJaasConfig(jaasEntries);
     }
@@ -103,7 +98,7 @@ public class QuorumKerberosAuthTest extends KerberosSecurityTestcase {
         authConfigs.put(QuorumAuth.QUORUM_SERVER_SASL_AUTH_REQUIRED, "true");
         authConfigs.put(QuorumAuth.QUORUM_LEARNER_SASL_AUTH_REQUIRED, "true");
         authConfigs.put(QuorumAuth.QUORUM_KERBEROS_SERVICE_PRINCIPAL, serverPrincipal);
-        String connectStr = startQuorum(3, authConfigs, 3, true);
+        String connectStr = startQuorum(3, authConfigs, 3);
         CountdownWatcher watcher = new CountdownWatcher();
         ZooKeeper zk = new ZooKeeper(connectStr, ClientBase.CONNECTION_TIMEOUT, watcher);
         watcher.waitForConnected(ClientBase.CONNECTION_TIMEOUT);

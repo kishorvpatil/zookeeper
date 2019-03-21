@@ -18,8 +18,7 @@
 package org.apache.zookeeper.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.CancelledKeyException;
+
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -33,7 +32,8 @@ import org.slf4j.LoggerFactory;
 
 public class NIOServerCnxnTest extends ClientBase {
     private static final Logger LOG = LoggerFactory
-            .getLogger(NIOServerCnxnTest.class);
+                        .getLogger(NIOServerCnxnTest.class);
+
     /**
      * Test operations on ServerCnxn after socket closure.
      */
@@ -65,40 +65,6 @@ public class NIOServerCnxnTest extends ClientBase {
                             + "getting connection details!");
                 }
             }
-        } finally {
-            zk.close();
-        }
-    }
-
-    /**
-     * Mock extension of NIOServerCnxn to test for
-     * CancelledKeyException (ZOOKEEPER-2044).
-     */
-    private static class MockNIOServerCnxn extends NIOServerCnxn {
-        public MockNIOServerCnxn(NIOServerCnxn cnxn)
-                throws IOException {
-            super(cnxn.zkServer, cnxn.sock, cnxn.sk, cnxn.factory);
-        }
-
-        public void mockSendBuffer(ByteBuffer bb) throws Exception {
-            super.internalSendBuffer(bb);
-        }
-    }
-
-    @Test(timeout = 30000)
-    public void testValidSelectionKey() throws Exception {
-        final ZooKeeper zk = createZKClient(hostPort, 3000);
-        try {
-            Iterable<ServerCnxn> connections = serverFactory.getConnections();
-            for (ServerCnxn serverCnxn : connections) {
-                MockNIOServerCnxn mock = new MockNIOServerCnxn((NIOServerCnxn) serverCnxn);
-                // Cancel key
-                ((NIOServerCnxn) serverCnxn).sock.keyFor(((NIOServerCnxnFactory) serverFactory).selector).cancel();;
-                mock.mockSendBuffer(ByteBuffer.allocate(8));
-            }
-        } catch (CancelledKeyException e) {
-            LOG.error("Exception while sending bytes!", e);
-            Assert.fail(e.toString());
         } finally {
             zk.close();
         }

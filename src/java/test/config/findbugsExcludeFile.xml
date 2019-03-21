@@ -75,7 +75,7 @@
   </Match>
 
   <Match>
-    <Class name="org.apache.zookeeper.server.quorum.QuorumAuthPacket" />
+      <Class name="org.apache.zookeeper.server.quorum.QuorumAuthPacket" />
       <Bug code="EI2, EI" />
   </Match>
 
@@ -95,29 +95,16 @@
      <Bug code="IS"/>
   </Match>
   <Match>
-    <Class name="org.apache.zookeeper.server.persistence.FileTxnLog"/>
-    <Field name="serverStats"/>
-    <Bug code="IS"/>
-  </Match>
-  <Match>
      <Class name="org.apache.zookeeper.server.quorum.LearnerSessionTracker"/>
        <Bug code="UrF"/>
   </Match>
   <Match>
     <Class name="org.apache.zookeeper.server.quorum.AuthFastLeaderElection$Messenger$WorkerSender"/>
     <Method name="process"/>
-    <Bug code="RV,SF"/>
-  </Match>
-  <Match>
-    <Class name="org.apache.zookeeper.server.quorum.AuthFastLeaderElection$Messenger$WorkerReceiver"/>
-    <Method name="run"/>
-    <Bug code="SF"/>
+    <Bug code="RV"/>
   </Match>
 
   <!-- these are old classes just for upgrading and should go away -->
-  <Match>
-    <Class name="org.apache.zookeeper.server.quorum.AuthFastLeaderElection"/>
-  </Match>
   <Match>
     <Class name="org.apache.zookeeper.server.upgrade.DataNodeV1"/>
   </Match> 
@@ -149,6 +136,19 @@
     <Method name="writeLongToFile" />
   </Match>
 
+  <!-- this is a helper routine to wakeup the main thread with the
+  state change happening in the routines that call it -->
+  <Match>
+    <Class name="org.apache.zookeeper.server.quorum.CommitProcessor"/>
+    <Bug pattern="NN_NAKED_NOTIFY" />
+    <Method name="wakeup" />
+  </Match>
+
+  <!-- Disable encoding warnings -->
+  <Match>
+    <Bug pattern="DM_DEFAULT_ENCODING" />
+  </Match>
+
   <!-- Disable 'Malicious code vulnerability warnings' due to mutable collection types in interface.
        Undo this when ZOOKEEPER-1362 is done. -->
   <Match>
@@ -156,11 +156,11 @@
       <Bug pattern="MS_MUTABLE_COLLECTION" />
   </Match>
 
-  <!-- Disable 'Found reliance on default encoding in' warnings. Ideally this should be fixed
-       by fixing the underlying cause - reliance on 'default' encoding in IO operations.
-       Please see ZOOKEEPER-1976 for detailed discussion. -->
+  <!-- Disable 'Return value of method without side effect is ignored' for EphemeralType. The default
+       version just returns 0 which triggers the warning. Findbugs can't seem to find the override in
+       the TTL value of the enum however -->
   <Match>
-    <Bug pattern="DM_DEFAULT_ENCODING" />
+    <Class name="org.apache.zookeeper.server.EphemeralType"/>
+      <Bug pattern="RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT" />
   </Match>
-
 </FindBugsFilter>

@@ -28,7 +28,7 @@ public class TestUtils {
 
     /**
      * deletes a folder recursively
-     *
+     * 
      * @param file
      *            folder to be deleted
      * @param failOnError

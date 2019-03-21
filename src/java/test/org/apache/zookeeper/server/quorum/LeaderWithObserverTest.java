@@ -26,6 +26,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.zookeeper.server.quorum.ZabUtils.createLeader;
 import static org.apache.zookeeper.server.quorum.ZabUtils.createQuorumPeer;
@@ -43,11 +46,15 @@ public class LeaderWithObserverTest {
         tmpDir = ClientBase.createTmpDir();
         peer = createQuorumPeer(tmpDir);
         participantId = 1;
-        observerId = peer.quorumPeers.size();
+        Map<Long, QuorumPeer.QuorumServer> peers = peer.getQuorumVerifier().getAllMembers();
+        observerId = peers.size();
         leader = createLeader(tmpDir, peer);
         peer.leader = leader;
-        peer.quorumPeers.put(observerId, new QuorumPeer.QuorumServer(observerId, "127.0.0.1", PortAssignment.unique(),
-                0, QuorumPeer.LearnerType.OBSERVER));
+        peers.put(observerId, new QuorumPeer.QuorumServer(
+                observerId, new InetSocketAddress("127.0.0.1", PortAssignment.unique()),
+                new InetSocketAddress("127.0.0.1", PortAssignment.unique()),
+                new InetSocketAddress("127.0.0.1", PortAssignment.unique()),
+                QuorumPeer.LearnerType.OBSERVER));
 
         // these tests are serial, we can speed up InterruptedException
         peer.tickTime = 1;
@@ -105,7 +112,6 @@ public class LeaderWithObserverTest {
     @Test
     public void testWaitForEpochAck() throws Exception {
         // things needed for waitForEpochAck to run (usually in leader.lead(), but we're not running leader here)
-        leader.readyToStart = true;
         leader.leaderStateSummary = new StateSummary(leader.self.getCurrentEpoch(), leader.zk.getLastProcessedZxid());
 
         Assert.assertEquals("Unexpected vote in electingFollowers", 0, leader.electingFollowers.size());
@@ -143,9 +149,11 @@ public class LeaderWithObserverTest {
         long zxid = leader.zk.getZxid();
 
         // things needed for waitForNewLeaderAck to run (usually in leader.lead(), but we're not running leader here)
-        leader.newLeaderProposal.packet = new QuorumPacket(0, zxid,null, null);
+        leader.newLeaderProposal.packet = new QuorumPacket(0, zxid, null, null);
+        leader.newLeaderProposal.addQuorumVerifier(peer.getQuorumVerifier());
 
-        Assert.assertEquals("Unexpected vote in ackSet", 0, leader.newLeaderProposal.ackSet.size());
+        Set<Long> ackSet = leader.newLeaderProposal.qvAcksetPairs.get(0).getAckset();
+        Assert.assertEquals("Unexpected vote in ackSet", 0, ackSet.size());
         Assert.assertFalse(leader.quorumFormed);
         try {
             // leader calls waitForNewLeaderAck, first add to ackSet
@@ -154,7 +162,7 @@ public class LeaderWithObserverTest {
             // ignore timeout
         }
 
-        Assert.assertEquals("Unexpected vote in ackSet", 1, leader.newLeaderProposal.ackSet.size());
+        Assert.assertEquals("Unexpected vote in ackSet", 1, ackSet.size());
         Assert.assertFalse(leader.quorumFormed);
         try {
             // observer calls waitForNewLeaderAck, should fail verifier.containsQuorum
@@ -163,12 +171,12 @@ public class LeaderWithObserverTest {
             // ignore timeout
         }
 
-        Assert.assertEquals("Unexpected vote in ackSet", 1, leader.newLeaderProposal.ackSet.size());
+        Assert.assertEquals("Unexpected vote in ackSet", 1, ackSet.size());
         Assert.assertFalse(leader.quorumFormed);
         try {
             // second add to ackSet, verifier.containsQuorum=true, waitForNewLeaderAck returns without exceptions
             leader.waitForNewLeaderAck(participantId, zxid);
-            Assert.assertEquals("Unexpected vote in ackSet", 2, leader.newLeaderProposal.ackSet.size());
+            Assert.assertEquals("Unexpected vote in ackSet", 2, ackSet.size());
             Assert.assertTrue(leader.quorumFormed);
         } catch (Exception e) {
             Assert.fail("Timed out in waitForEpochAck");

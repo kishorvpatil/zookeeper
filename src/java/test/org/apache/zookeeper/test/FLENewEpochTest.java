@@ -152,18 +152,19 @@ public class FLENewEpochTest extends ZKTestCase {
       @Test
       public void testLENewEpoch() throws Exception {
 
-          FastLeaderElection le[] = new FastLeaderElection[count];
-
           LOG.info("TestLE: " + getTestName()+ ", " + count);
           for(int i = 0; i < count; i++) {
               peers.put(Long.valueOf(i),
-                        new QuorumServer(i, "0.0.0.0", PortAssignment.unique(),
-                                         PortAssignment.unique(), null));
+                  new QuorumServer(i,
+                      new InetSocketAddress(
+                          "127.0.0.1", PortAssignment.unique()),
+                      new InetSocketAddress(
+                          "127.0.0.1", PortAssignment.unique())));
               tmpdir[i] = ClientBase.createTmpDir();
               port[i] = PortAssignment.unique();
           }
 
-          for(int i = 1; i < le.length; i++) {
+          for(int i = 1; i < count; i++) {
               QuorumPeer peer = new QuorumPeer(peers, tmpdir[i], tmpdir[i], port[i], 3, i, 1000, 2, 2);
               peer.startLeaderElection();
               LEThread thread = new LEThread(peer, i);

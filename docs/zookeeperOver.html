@@ -67,7 +67,7 @@
 <a class="unselected" href="https://cwiki.apache.org/confluence/display/ZOOKEEPER/">Wiki</a>
 </li>
 <li class="current">
-<a class="selected" href="index.html">ZooKeeper 3.4 Documentation</a>
+<a class="selected" href="index.html">ZooKeeper 3.5 Documentation</a>
 </li>
 </ul>
 <!--+
@@ -135,23 +135,8 @@ document.write("Last Published: " + document.lastModified);
 <a href="recipes.html">Recipes</a>
 </div>
 </div>
-<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">BookKeeper</div>
+<div onclick="SwitchMenu('menu_1.3', 'skin/')" id="menu_1.3Title" class="menutitle">Admin &amp; Ops</div>
 <div id="menu_1.3" class="menuitemgroup">
-<div class="menuitem">
-<a href="bookkeeperStarted.html">Getting started</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperOverview.html">Overview</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperConfig.html">Setup guide</a>
-</div>
-<div class="menuitem">
-<a href="bookkeeperProgrammer.html">Programmer's guide</a>
-</div>
-</div>
-<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Admin &amp; Ops</div>
-<div id="menu_1.4" class="menuitemgroup">
 <div class="menuitem">
 <a href="zookeeperAdmin.html">Administrator's Guide</a>
 </div>
@@ -164,15 +149,18 @@ document.write("Last Published: " + document.lastModified);
 <div class="menuitem">
 <a href="zookeeperObservers.html">Observers Guide</a>
 </div>
+<div class="menuitem">
+<a href="zookeeperReconfig.html">Dynamic Reconfiguration</a>
 </div>
-<div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Contributor</div>
-<div id="menu_1.5" class="menuitemgroup">
+</div>
+<div onclick="SwitchMenu('menu_1.4', 'skin/')" id="menu_1.4Title" class="menutitle">Contributor</div>
+<div id="menu_1.4" class="menuitemgroup">
 <div class="menuitem">
 <a href="zookeeperInternals.html">ZooKeeper Internals</a>
 </div>
 </div>
-<div onclick="SwitchMenu('menu_1.6', 'skin/')" id="menu_1.6Title" class="menutitle">Miscellaneous</div>
-<div id="menu_1.6" class="menuitemgroup">
+<div onclick="SwitchMenu('menu_1.5', 'skin/')" id="menu_1.5Title" class="menutitle">Miscellaneous</div>
+<div id="menu_1.5" class="menuitemgroup">
 <div class="menuitem">
 <a href="https://cwiki.apache.org/confluence/display/ZOOKEEPER">Wiki</a>
 </div>
@@ -277,7 +265,7 @@ document.write("Last Published: " + document.lastModified);
       file system. The name space consists of data registers - called znodes,
       in ZooKeeper parlance - and these are similar to files and directories.
       Unlike a typical file system, which is designed for storage, ZooKeeper
-      data is kept in-memory, which means ZooKeeper can acheive high
+      data is kept in-memory, which means ZooKeeper can achieve high
       throughput and low latency numbers.</p>
 <p>The ZooKeeper implementation puts a premium on high performance,
       highly available, strictly ordered access. The performance aspects of
@@ -341,7 +329,7 @@ document.write("Last Published: " + document.lastModified);
 </table>
 <a name="Nodes+and+ephemeral+nodes"></a>
 <h3 class="h4">Nodes and ephemeral nodes</h3>
-<p>Unlike is standard file systems, each node in a ZooKeeper
+<p>Unlike standard file systems, each node in a ZooKeeper
       namespace can have data associated with it as well as children. It is
       like having a file-system that allows a file to also be a directory.
       (ZooKeeper was designed to store coordination data: status information,
@@ -365,9 +353,9 @@ document.write("Last Published: " + document.lastModified);
 <a name="Conditional+updates+and+watches"></a>
 <h3 class="h4">Conditional updates and watches</h3>
 <p>ZooKeeper supports the concept of <em>watches</em>.
-      Clients can set a watch on a znodes. A watch will be triggered and
-      removed when the znode changes. When a watch is triggered the client
-      receives a packet saying that the znode has changed. And if the
+      Clients can set a watch on a znode. A watch will be triggered and
+      removed when the znode changes. When a watch is triggered, the client
+      receives a packet saying that the znode has changed. If the
       connection between the client and one of the Zoo Keeper servers is
       broken, the client will receive a local notification. These can be used
       to <em>[tbd]</em>.</p>
@@ -499,7 +487,7 @@ document.write("Last Published: " + document.lastModified);
       of the ZooKeeper service. With the exception of the request processor,
      each of
       the servers that make up the ZooKeeper service replicates its own copy
-      of each of components.</p>
+      of each of the components.</p>
 <table class="ForrestTable" cellspacing="1" cellpadding="4">
 <tr>
 <td>ZooKeeper Components</td>

@@ -28,19 +28,18 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.Assert;
-import junit.framework.TestCase;
-
+import org.apache.zookeeper.client.ZKClientConfig;
 import org.apache.zookeeper.client.HostProvider;
+import org.junit.Assert;
 import org.junit.Test;
 
-public class ClientReconnectTest extends TestCase {
+public class ClientReconnectTest extends ZKTestCase {
     private SocketChannel sc;
     private CountDownLatch countDownLatch = new CountDownLatch(3);
     
     class MockCnxn extends ClientCnxnSocketNIO {
         MockCnxn() throws IOException {
-            super();
+            super(new ZKClientConfig());
         }
 
         @Override
@@ -60,9 +59,10 @@ public class ClientReconnectTest extends TestCase {
     public void testClientReconnect() throws IOException, InterruptedException {
         HostProvider hostProvider = mock(HostProvider.class);
         when(hostProvider.size()).thenReturn(1);
-        InetSocketAddress inaddr = new InetSocketAddress(1111);
+        InetSocketAddress inaddr = new InetSocketAddress("127.0.0.1", 1111);
         when(hostProvider.next(anyLong())).thenReturn(inaddr);
         ZooKeeper zk = mock(ZooKeeper.class);
+        when(zk.getClientConfig()).thenReturn(new ZKClientConfig());
         sc =  SocketChannel.open();
 
         ClientCnxnSocketNIO nioCnxn = new MockCnxn();
