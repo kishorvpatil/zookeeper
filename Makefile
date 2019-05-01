@@ -2,15 +2,12 @@ ROOT=/home/y
 MVN=/home/y/bin/mvn
 
 SRCTOP = .
-YAHOO_CFG=/home/y/share/yahoo_cfg
-include $(YAHOO_CFG)/Make.defs
 
 PACKAGE_CONFIG_FILES = yahoo-build/zookeeper_core.yicf
 PACKAGE_TARGET_DIR = yahoo-build/
 
 # Rules should be included after vars are set else 
 # SD thinks you didn't set PACKAGE_CONFIG or whatever, and makes it *.yicf.
-include $(YAHOO_CFG)/Make.rules
 
 screwdriver: build native_c_client 
 
@@ -33,7 +30,8 @@ copy_test_files:
 
 build: VERSION
 	@echo "Building..."
-	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
+	yinst i -yes -branch test yjava_ant
+	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
 
 clean::
 	rm -rf test_results
@@ -78,3 +76,4 @@ native_c_client:
 #	Build packages
 	make -C yahoo-build/c-client/
 	cp yahoo-build/c-client/packages/*.tgz ${AUTO_PUBLISH_DIR}
+
