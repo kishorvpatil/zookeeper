@@ -22,8 +22,10 @@ import org.apache.zookeeper.CreateMode;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class EphemeralTypeTest {
     @Before
     public void setUp() {
