@@ -31,7 +31,9 @@ copy_test_files:
 build: VERSION
 	@echo "Building..."
 	yinst i -yes -branch test yjava_ant
-	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
+	sudo yum -y install automake cppunit-devel
+	ls -lrt /usr/share/aclocal/
+	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/usr/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
 
 clean::
 	rm -rf test_results
@@ -44,8 +46,7 @@ clean::
 # push only zookeeper_core package to rhel6 and rhel7
 dist_force_push:
 	for packages in yahoo-build/zookeeper_core-*.tgz; do \
-		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os rhel-6.x $$packages; \
-		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os rhel-7.x $$packages; \
+		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os ${ZOOKEEPER_DIST_OS} $$packages;
 	done
 
 git_tag: VERSION
