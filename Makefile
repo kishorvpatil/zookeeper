@@ -35,6 +35,8 @@ build: VERSION
 	ls -lrt /usr/share/aclocal/
 	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/usr/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
 
+package-release: ;yinst_create --buildtype test --platform ${ZOOKEEPER_DIST_OS} ${PACKAGE_CONFIG_FILES} --target yahoo-build
+
 clean::
 	rm -rf test_results
 	rm -rf build
@@ -43,10 +45,10 @@ clean::
 	rm -f C_CLIENT_VERSION
 	rm -f GIT_TAG
 
-# push only zookeeper_core package to rhel6 and rhel7
+# push zookeeper_core + zookeeper_c_client packages to rhel6 and rhel7
 dist_force_push:
-	for packages in yahoo-build/zookeeper_core-*.tgz; do \
-		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os ${ZOOKEEPER_DIST_OS} $$packages;
+	for packages in yahoo-build/zookeeper*.tgz; do \
+		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os ${ZOOKEEPER_DIST_OS} $$packages; \
 	done
 
 git_tag: VERSION
@@ -76,5 +78,5 @@ native_c_client:
 
 #	Build packages
 	make -C yahoo-build/c-client/
-	cp yahoo-build/c-client/packages/*.tgz ${AUTO_PUBLISH_DIR}
+	cp yahoo-build/c-client/packages/*.tgz yahoo-build/
 
