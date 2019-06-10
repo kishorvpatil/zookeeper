@@ -23,17 +23,18 @@ VERSION: BASE_VERSION
 	/home/y/bin/auto_increment_version.pl zookeeper_core `cat BASE_VERSION`".y" > VERSION	
 	/home/y/bin/auto_increment_version.pl zookeeper_c_client `cat BASE_VERSION`".y" > C_CLIENT_VERSION
 	echo "core."`cat VERSION`"-c.client."`cat C_CLIENT_VERSION` > GIT_TAG
+	cp GIT_TAG ${SD_ARTIFACTS_DIR}/
 
 copy_test_files:
 	mkdir -p test_results/
-	cp build/test/logs/* test_results/
+	# cp build/test/logs/* test_results/
 
 build: VERSION
 	@echo "Building..."
 	yinst i -yes -branch test yjava_ant
 	sudo yum -y install automake cppunit-devel
 	ls -lrt /usr/share/aclocal/
-	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/usr/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
+	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/usr/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
 
 package-release: ;yinst_create --buildtype test --platform ${ZOOKEEPER_DIST_OS} ${PACKAGE_CONFIG_FILES} --target yahoo-build
 
@@ -47,14 +48,20 @@ clean::
 
 # push zookeeper_core + zookeeper_c_client packages to rhel6 and rhel7
 dist_force_push:
-	for packages in yahoo-build/zookeeper*.tgz; do \
-		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os ${ZOOKEEPER_DIST_OS} $$packages; \
-	done
+	 for packages in yahoo-build/zookeeper*.tgz; do \
+	    echo "nothing"; \
+	    # /home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os ${ZOOKEEPER_DIST_OS} $$packages; \
+	 done
 
-git_tag: VERSION
-	git tag -f -a `cat ${SRC_DIR}/GIT_TAG` -m "Adding tag for `cat ${SRC_DIR}/GIT_TAG`"
-	git push origin `cat ${SRC_DIR}/GIT_TAG`
-	@echo "Build Description: `cat ${SRC_DIR}/GIT_TAG`"
+git_tag:
+    # git tag -f -a `cat ${SD_ARTIFACTS_DIR}/GIT_TAG` -m "Adding tag for `cat ${SD_ARTIFACTS_DIR}/GIT_TAG`"
+	# git push origin `cat ${SD_ARTIFACTS_DIR}/GIT_TAG`
+	IFS=' ' read -ra build_ids <<< "${SD_PARENT_BUILD_ID}"
+	echo ${build_ids}
+	IFS='[' read -ra build_id <<< "${build_ids[0]}"
+	curl -Lsvo  GIT_TAG -H "Authorization: Bearer ${SD_TOKEN}" \
+            "https://api.screwdriver.ouroath.com/v4/builds/${build_id}/artifacts/GIT_TAG"
+	@echo "Build Description: `cat GIT_TAG`"
 
 native_c_client:
 #   Build libs and binaries
