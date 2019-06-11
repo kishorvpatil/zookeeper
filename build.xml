@@ -1277,7 +1277,7 @@ xmlns:cs="antlib:com.puppycrawl.tools.checkstyle.ant">
     </target>
 
     <target name="fail.build.on.test.failure" if="${test.junit.failbuild.ontestfailure}" >
-       <!--  <fail if="tests.failed">Tests failed!</fail> -->
+       <fail if="tests.failed">Tests failed!</fail>
     </target>
 
     <target name="junit.run-single" unless="ant.supports.concurrent.junit.processes">
