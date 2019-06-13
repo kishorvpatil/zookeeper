@@ -34,9 +34,14 @@ build: VERSION
 	yinst i -yes -branch test yjava_ant
 	sudo yum -y --nogpgcheck install automake cppunit-devel krb5-workstation krb5-libs krb5-auth-dialog
 	ls -lrt /usr/share/aclocal/
+	ls -lrt /etc/
 	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/usr/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
 
-package-release: ;yinst_create --buildtype test --platform ${ZOOKEEPER_DIST_OS} ${PACKAGE_CONFIG_FILES} --target yahoo-build
+package-release:
+	yinst_create --buildtype test --platform ${ZOOKEEPER_DIST_OS} ${PACKAGE_CONFIG_FILES} --target yahoo-build
+	cp yahoo-build/zookeeper*.tgz ${SD_ARTIFACTS_DIR}/
+	meta set "${ZOOKEEPER_DIST_OS}".build_id "${SD_BUILD_ID}"
+	./yahoo-build/save_build_artifacts.py
 
 clean::
 	rm -rf build
@@ -47,12 +52,9 @@ clean::
 
 # push zookeeper_core + zookeeper_c_client packages to rhel6 and rhel7
 dist_force_push:
-	 for packages in yahoo-build/zookeeper*.tgz; do \
-	    /home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os ${ZOOKEEPER_DIST_OS} $$packages; \
-	 done
+	./yahoo-build/fetch_and_push_build_artifacts.py
 
 git_tag:
-	./yahoo-build/fetch_git_tag.py
 	git tag -f -a `cat GIT_TAG` -m "Adding tag for `cat GIT_TAG`"
 	git push origin `cat GIT_TAG`
 	@echo "Build Description: `cat GIT_TAG`"

@@ -15,7 +15,6 @@ jobs:
       - print_env: set
       - build: gmake ${SD_SETTING_MAKE_ARGS} platforms
       - package: gmake ${SD_SETTING_MAKE_ARGS} package-release
-      - dist_force_push: gmake dist_force_push
 
   rhel7_build:
     requires: [~commit]
@@ -25,13 +24,12 @@ jobs:
       - print_env: set
       - build: gmake ${SD_SETTING_MAKE_ARGS} platforms
       - package: gmake ${SD_SETTING_MAKE_ARGS} package-release
-      - dist_force_push: gmake dist_force_push
 
   publish:
     requires: [rhel6_build, rhel7_build]
     steps:
+      - dist_force_push: gmake dist_force_push
       - git_tag: gmake git_tag
-
 
 
 shared:
