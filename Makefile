@@ -33,12 +33,13 @@ build: VERSION
 	@echo "Building..."
 	yinst i -yes -branch test yjava_ant
 	sudo yum -y --nogpgcheck install automake cppunit-devel krb5-workstation krb5-libs krb5-auth-dialog
+	sudo yum -y --nogpgcheck groupinstall "Development Tools"
 	ls -lrt /usr/share/aclocal/
 	ls -lrt /etc/
 	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/usr/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
 
 package-release:
-	yinst_create --buildtype test --platform ${ZOOKEEPER_DIST_OS} ${PACKAGE_CONFIG_FILES} --target yahoo-build
+	yinst_create --buildtype release --platform ${ZOOKEEPER_DIST_OS} ${PACKAGE_CONFIG_FILES} --target yahoo-build
 	cp yahoo-build/zookeeper*.tgz ${SD_ARTIFACTS_DIR}/
 	meta set "${ZOOKEEPER_DIST_OS}".build_id "${SD_BUILD_ID}"
 	./yahoo-build/save_build_artifacts.py
