@@ -23,16 +23,24 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.net.Socket;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.HandshakeCompletedListener;
 
+import org.apache.zookeeper.common.QuorumX509Util;
 import org.apache.zookeeper.common.Time;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,16 +54,17 @@ import org.apache.zookeeper.server.quorum.QuorumPeer.LearnerType;
 import org.apache.zookeeper.server.quorum.QuorumPeer.QuorumServer;
 import org.apache.zookeeper.server.quorum.QuorumPeer.ServerState;
 import org.apache.zookeeper.test.ClientBase;
+import org.apache.zookeeper.test.FLENewEpochTest;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 public class CnxManagerTest extends ZKTestCase {
-    protected static final Logger LOG = LoggerFactory.getLogger(CnxManagerTest.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(FLENewEpochTest.class);
     protected static final int THRESHOLD = 4;
 
     int count;
-    HashMap<Long,QuorumServer> peers;
+    Map<Long,QuorumServer> peers;
     File peerTmpdir[];
     int peerQuorumPort[];
     int peerClientPort[];
@@ -245,10 +254,10 @@ public class CnxManagerTest extends ZKTestCase {
         SocketChannel sc = SocketChannel.open();
         sc.socket().connect(peers.get(1L).electionAddr, 5000);
 
-        InetSocketAddress otherAddr = peers.get(new Long(2)).electionAddr;
+        InetSocketAddress otherAddr = peers.get(Long.valueOf(2)).electionAddr;
         DataOutputStream dout = new DataOutputStream(sc.socket().getOutputStream());
         dout.writeLong(QuorumCnxManager.PROTOCOL_VERSION);
-        dout.writeLong(new Long(2));
+        dout.writeLong(2);
         String addr = otherAddr.getHostString()+ ":" + otherAddr.getPort();
         byte[] addr_bytes = addr.getBytes();
         dout.writeInt(addr_bytes.length);
@@ -284,7 +293,7 @@ public class CnxManagerTest extends ZKTestCase {
     /**
      * Tests a bug in QuorumCnxManager that causes a NPE when a 3.4.6
      * observer connects to a 3.5.0 server. 
-     * {@link https://issues.apache.org/jira/browse/ZOOKEEPER-1789}
+     * see https://issues.apache.org/jira/browse/ZOOKEEPER-1789
      * 
      * @throws Exception
      */
@@ -361,6 +370,81 @@ public class CnxManagerTest extends ZKTestCase {
         if((end - begin) > ((peer.getSyncLimit() * peer.getTickTime()) + 500)) Assert.fail("Waited more than necessary");
         cnxManager.halt();
         Assert.assertFalse(cnxManager.listener.isAlive());
+    }
+
+    /**
+     * Test the SSLSocket is explicitly closed when there is IOException
+     * happened during connect.
+     */
+    @Test
+    public void testSSLSocketClosedWhenHandshakeTimeout() throws Exception {
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+        QuorumX509Util mockedX509Util = new QuorumX509Util() {
+            @Override
+            public SSLSocket createSSLSocket() {
+                return new SSLSocket() {
+
+                    @Override
+                    public void connect(SocketAddress endpoint, int timeout) {}
+
+                    @Override
+                    public void startHandshake() throws IOException {
+                        throw new IOException();
+                    }
+
+                    @Override
+                    public void close() {
+                        closeLatch.countDown();
+                    }
+
+                    public String [] getSupportedCipherSuites() {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    public String [] getEnabledCipherSuites() {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    public String [] getSupportedProtocols() {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    public String [] getEnabledProtocols() {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    public SSLSession getSession() {
+                        throw new UnsupportedOperationException();
+                    }
+
+                    public void setEnabledCipherSuites(String suites []) {}
+                    public void setEnabledProtocols(String protocols[]) {}
+                    public void addHandshakeCompletedListener(HandshakeCompletedListener listener) {}
+                    public void removeHandshakeCompletedListener(HandshakeCompletedListener listener) {}
+                    public void setUseClientMode(boolean mode) {}
+                    public boolean getUseClientMode() { return true; }
+                    public void setNeedClientAuth(boolean need) {}
+                    public boolean getNeedClientAuth() { return true; }
+                    public void setWantClientAuth(boolean want) {}
+                    public boolean getWantClientAuth() { return true; }
+                    public void setEnableSessionCreation(boolean flag) {}
+                    public boolean getEnableSessionCreation() { return true; }
+                };
+            }
+        };
+
+        QuorumPeer peer = new QuorumPeer(peers, peerTmpdir[0], peerTmpdir[0],
+                peerClientPort[0], 3, 0, 2000, 2, 2) {
+            @Override
+            public QuorumX509Util createX509Util() {
+                return mockedX509Util;
+            }
+        };
+
+        peer.setSslQuorum(true);
+        QuorumCnxManager cnxManager = peer.createCnxnManager();
+        cnxManager.connectOne(1, peers.get(1L).electionAddr);
+        Assert.assertTrue(closeLatch.await(1, TimeUnit.SECONDS));
     }
 
     /*
