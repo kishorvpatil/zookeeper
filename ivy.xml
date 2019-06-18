@@ -35,6 +35,7 @@
     <conf name="javacc" visibility="private"/>
     <conf name="releaseaudit" visibility="private" description="Artifacts required for releaseaudit target"/>
     <conf name="owasp" visibility="private" description="Artifacts required for owasp target"/>
+    <conf name="clover" visibility="private" description="Artifacts required for clover target"/>
   </configurations>
 
   <publications>
@@ -45,6 +46,7 @@
     <dependency org="org.slf4j" name="slf4j-api" rev="${slf4j.version}"/>
     <dependency org="org.slf4j" name="slf4j-log4j12" rev="${slf4j.version}" transitive="false"/>
     <dependency org="commons-cli" name="commons-cli" rev="${commons-cli.version}" />
+    <dependency org="com.github.spotbugs" name="spotbugs-annotations" rev="${spotbugsannotations.version}" />
   
     <dependency org="org.apache.maven.wagon" name="wagon-http" rev="${wagon-http.version}"
                 conf="mvn-ant-task->default"/>
@@ -58,8 +60,8 @@
     <dependency org="org.apache.yetus" name="audience-annotations"
                 rev="${audience-annotations.version}"/>
 
-    <dependency org="io.netty" name="netty" conf="default" rev="${netty.version}">
-      <artifact name="netty" type="jar" conf="default"/>
+    <dependency org="io.netty" name="netty-all" conf="default" rev="${netty.version}">
+      <artifact name="netty-all" type="jar" conf="default"/>
     </dependency>
 
     <dependency org="junit" name="junit" rev="${junit.version}" conf="test->default"/>
@@ -73,6 +75,9 @@
     <!-- force the tests to pull the latest commons-collections jar -->
     <dependency org="commons-collections" name="commons-collections" 
                 rev="${commons-collections.version}" conf="test->default"/>
+
+    <dependency org="org.bouncycastle" name="bcprov-jdk15on" rev="${bouncycastle.version}" conf="test->default"/>
+    <dependency org="org.bouncycastle" name="bcpkix-jdk15on" rev="${bouncycastle.version}" conf="test->default"/>
 
     <dependency org="jdiff" name="jdiff" rev="${jdiff.version}"
                 conf="jdiff->default"/>
@@ -130,8 +135,13 @@
                 conf="optional->default"/>
       <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="${jetty.version}"
                   conf="optional->default"/>
-    <dependency org="org.codehaus.jackson" name="jackson-mapper-asl"
-                rev="${jackson-mapper-asl.version}" conf="optional->default"/>
+    <dependency org="com.fasterxml.jackson.core" name="jackson-databind"
+                rev="${jackson.version}" conf="optional->default"/>
+
+    <dependency org="org.openclover" name="clover" rev="${clover.version}" conf="clover->default"/>
+
+    <dependency org="org.hamcrest" name="hamcrest-all" rev="${hamcrest.version}"
+                  conf="test->default" />
 
     <conflict manager="strict"/>
 
