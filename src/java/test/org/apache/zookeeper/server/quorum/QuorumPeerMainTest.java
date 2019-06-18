@@ -58,12 +58,14 @@ import org.apache.zookeeper.server.quorum.Leader.Proposal;
 import org.apache.zookeeper.test.ClientBase;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Test stand-alone server.
  *
  */
+@Ignore
 public class QuorumPeerMainTest extends QuorumPeerTestBase {
 
     private Servers servers;

@@ -33,8 +33,10 @@ import org.apache.zookeeper.test.ClientBase.CountdownWatcher;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class QuorumKerberosAuthTest extends KerberosSecurityTestcase {
     private static File keytabFile;
     static {

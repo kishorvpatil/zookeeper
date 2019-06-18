@@ -2,15 +2,12 @@ ROOT=/home/y
 MVN=/home/y/bin/mvn
 
 SRCTOP = .
-YAHOO_CFG=/home/y/share/yahoo_cfg
-include $(YAHOO_CFG)/Make.defs
 
 PACKAGE_CONFIG_FILES = yahoo-build/zookeeper_core.yicf
 PACKAGE_TARGET_DIR = yahoo-build/
 
 # Rules should be included after vars are set else 
 # SD thinks you didn't set PACKAGE_CONFIG or whatever, and makes it *.yicf.
-include $(YAHOO_CFG)/Make.rules
 
 screwdriver: build native_c_client 
 
@@ -26,34 +23,42 @@ VERSION: BASE_VERSION
 	/home/y/bin/auto_increment_version.pl zookeeper_core `cat BASE_VERSION`".y" > VERSION	
 	/home/y/bin/auto_increment_version.pl zookeeper_c_client `cat BASE_VERSION`".y" > C_CLIENT_VERSION
 	echo "core."`cat VERSION`"-c.client."`cat C_CLIENT_VERSION` > GIT_TAG
+	cp GIT_TAG ${SD_ARTIFACTS_DIR}/
 
 copy_test_files:
-	mkdir -p test_results/
-	cp build/test/logs/* test_results/
+	mkdir -p ${SD_ARTIFACTS_DIR}/test_results/
+	cp build/test/logs/* ${SD_ARTIFACTS_DIR}/test_results/
 
 build: VERSION
 	@echo "Building..."
-	ant -Djavac.args=\"-Xlint -Xmaxwarns 1000\" -Dcppunit.m4=/home/y/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
+	yinst i -yes -branch test yjava_ant
+	sudo yum -y --nogpgcheck install automake cppunit-devel krb5-workstation krb5-libs krb5-auth-dialog
+	sudo yum -y --nogpgcheck groupinstall "Development Tools"
+	ls -lrt /usr/share/aclocal/
+	ls -lrt /etc/
+	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/usr/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
+
+package-release:
+	yinst_create --buildtype release --platform ${ZOOKEEPER_DIST_OS} ${PACKAGE_CONFIG_FILES} --target yahoo-build
+	cp yahoo-build/zookeeper*.tgz ${SD_ARTIFACTS_DIR}/
+	meta set "${ZOOKEEPER_DIST_OS}".build_id "${SD_BUILD_ID}"
+	./yahoo-build/save_build_artifacts.py
 
 clean::
-	rm -rf test_results
 	rm -rf build
 	rm -f BASE_VERSION
 	rm -f VERSION
 	rm -f C_CLIENT_VERSION
 	rm -f GIT_TAG
 
-# push only zookeeper_core package to rhel6 and rhel7
+# push zookeeper_core + zookeeper_c_client packages to rhel6 and rhel7
 dist_force_push:
-	for packages in yahoo-build/zookeeper_core-*.tgz; do \
-		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os rhel-6.x $$packages; \
-		/home/y/bin/dist_install -branch test -headless -identity=/home/screwdrv/.ssh/id_dsa -group=zookeeper -batch -nomail -os rhel-7.x $$packages; \
-	done
+	./yahoo-build/fetch_and_push_build_artifacts.py
 
-git_tag: VERSION
-	git tag -f -a `cat ${SRC_DIR}/GIT_TAG` -m "Adding tag for `cat ${SRC_DIR}/GIT_TAG`"
-	git push origin `cat ${SRC_DIR}/GIT_TAG`
-	@echo "Build Description: `cat ${SRC_DIR}/GIT_TAG`"
+git_tag:
+	git tag -f -a `cat GIT_TAG` -m "Adding tag for `cat GIT_TAG`"
+	git push origin `cat GIT_TAG`
+	@echo "Build Description: `cat GIT_TAG`"
 
 native_c_client:
 #   Build libs and binaries
@@ -77,4 +82,5 @@ native_c_client:
 
 #	Build packages
 	make -C yahoo-build/c-client/
-	cp yahoo-build/c-client/packages/*.tgz ${AUTO_PUBLISH_DIR}
+	cp yahoo-build/c-client/packages/*.tgz yahoo-build/
+

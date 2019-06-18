@@ -35,10 +35,12 @@ import org.apache.zookeeper.test.ClientBase.CountdownWatcher;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import junit.framework.Assert;
 
+@Ignore
 public class QuorumKerberosHostBasedAuthTest extends KerberosSecurityTestcase {
     private static File keytabFile;
     private static String hostServerPrincipal = KerberosTestUtils.getHostServerPrincipal();

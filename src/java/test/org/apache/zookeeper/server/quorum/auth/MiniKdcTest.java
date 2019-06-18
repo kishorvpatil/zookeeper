@@ -21,6 +21,7 @@ package org.apache.zookeeper.server.quorum.auth;
 import org.apache.kerby.kerberos.kerb.keytab.Keytab;
 import org.apache.kerby.kerberos.kerb.type.base.PrincipalName;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import javax.security.auth.Subject;
@@ -44,6 +45,7 @@ import java.util.Arrays;
  * Branch : trunk
  * Github Revision: 916140604ffef59466ba30832478311d3e6249bd
  */
+@Ignore
 public class MiniKdcTest extends KerberosSecurityTestcase {
     private static final boolean IBM_JAVA = System.getProperty("java.vendor")
             .contains("IBM");

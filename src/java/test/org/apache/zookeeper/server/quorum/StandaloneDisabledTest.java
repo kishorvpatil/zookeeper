@@ -31,8 +31,10 @@ import org.apache.zookeeper.admin.ZooKeeperAdmin;
 import org.apache.zookeeper.test.ClientBase;
 import org.apache.zookeeper.test.ReconfigTest;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore
 public class StandaloneDisabledTest extends QuorumPeerTestBase {
 
     private final int NUM_SERVERS = 5;
