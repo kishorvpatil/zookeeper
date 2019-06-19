@@ -27,7 +27,7 @@ VERSION: BASE_VERSION
 
 copy_test_files:
 	mkdir -p ${SD_ARTIFACTS_DIR}/test_results/
-	cp build/test/logs/* ${SD_ARTIFACTS_DIR}/test_results/
+	# cp build/test/logs/* ${SD_ARTIFACTS_DIR}/test_results/
 
 build: VERSION
 	@echo "Building..."
@@ -36,7 +36,11 @@ build: VERSION
 	sudo yum -y --nogpgcheck groupinstall "Development Tools"
 	ls -lrt /usr/share/aclocal/
 	ls -lrt /etc/
-	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/usr/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean test tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
+	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/usr/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
+	ls -lrt build/zookeeper-`cat BASE_VERSION`
+	ls -lrt build
+	find build/
+
 
 package-release:
 	yinst_create --buildtype release --platform ${ZOOKEEPER_DIST_OS} ${PACKAGE_CONFIG_FILES} --target yahoo-build
@@ -62,23 +66,23 @@ git_tag:
 
 native_c_client:
 #   Build libs and binaries
-	export PATH=${PATH}:/usr/share/automake-1.11/ ; autoreconf -if src/c/configure.ac ; cd src/c ; ./configure
-	make -C src/c clean all
+	export PATH=${PATH}:/usr/share/automake-1.11/ ; autoreconf -if zookeeper-client/zookeeper-client-c/configure.ac ; cd zookeeper-client/zookeeper-client-c ; ./configure
+	make -C zookeeper-client/zookeeper-client-c clean all
 
 #   Copy libs and binaries
 	mkdir -p yahoo-build/c-client/x86_64-linux-gcc
-	cp src/c/.libs/libzookeeper_st.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
-	cp src/c/.libs/libzookeeper_mt.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
-	cp src/c/.libs/cli_mt yahoo-build/c-client/x86_64-linux-gcc/
-	cp src/c/.libs/cli_st yahoo-build/c-client/x86_64-linux-gcc/
+	cp zookeeper-client/zookeeper-client-c/.libs/libzookeeper_st.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
+	cp zookeeper-client/zookeeper-client-c/.libs/libzookeeper_mt.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
+	cp zookeeper-client/zookeeper-client-c/.libs/cli_mt yahoo-build/c-client/x86_64-linux-gcc/
+	cp zookeeper-client/zookeeper-client-c/.libs/cli_st yahoo-build/c-client/x86_64-linux-gcc/
 
 #	Copy headers
 	mkdir -p yahoo-build/c-client/include/hashtable
-	cp src/c/src/*.h yahoo-build/c-client/include
-	cp src/c/include/*.h yahoo-build/c-client/include
-	cp src/c/src/hashtable/*.h yahoo-build/c-client/include/hashtable
-	cp src/c/generated/*.h yahoo-build/c-client/include
-	cp src/c/config.h yahoo-build/c-client/include
+	cp zookeeper-client/zookeeper-client-c/src/*.h yahoo-build/c-client/include
+	cp zookeeper-client/zookeeper-client-c/include/*.h yahoo-build/c-client/include
+	cp zookeeper-client/zookeeper-client-c/src/hashtable/*.h yahoo-build/c-client/include/hashtable
+	cp zookeeper-client/zookeeper-client-c/generated/*.h yahoo-build/c-client/include
+	cp zookeeper-client/zookeeper-client-c/config.h yahoo-build/c-client/include
 
 #	Build packages
 	make -C yahoo-build/c-client/

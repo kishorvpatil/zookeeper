@@ -67,6 +67,7 @@ GIT_TAG
 src/java/lib/jdiff/zookeeper_*.xml
 test_results
 yahoo-build/*.tgz
+yahoo-build/c-client/packages/*
 
 # C
 tags
@@ -95,3 +96,16 @@ zookeeper-client/zookeeper-client-c/ltmain.sh
 zookeeper-client/zookeeper-client-c/missing
 zookeeper-server/src/main/java/org/apache/zookeeper/version/Info.java
 zookeeper-server/src/test/resources/
+
+zookeeper-client/zookeeper-client-c/.deps/
+zookeeper-client/zookeeper-client-c/.libs/
+zookeeper-client/zookeeper-client-c/Makefile
+zookeeper-client/zookeeper-client-c/cli_mt
+zookeeper-client/zookeeper-client-c/cli_st
+zookeeper-client/zookeeper-client-c/config.status
+zookeeper-client/zookeeper-client-c/libtool
+zookeeper-client/zookeeper-client-c/load_gen
+zookeeper-client/zookeeper-client-c/stamp-h1
+zookeeper-client/zookeeper-client-c/test-driver
+zookeeper-client/zookeeper-client-c/config.h
+zookeeper-server/src/main/resources/lib/jdiff/zookeeper_3.5.5.xml
