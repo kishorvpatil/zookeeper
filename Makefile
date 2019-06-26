@@ -62,23 +62,23 @@ git_tag:
 
 native_c_client:
 #   Build libs and binaries
-	export PATH=${PATH}:/usr/share/automake-1.11/ ; autoreconf -if src/c/configure.ac ; cd src/c ; ./configure
-	make -C src/c clean all
+	export PATH=${PATH}:/usr/share/automake-1.11/ ; autoreconf -if zookeeper-client/zookeeper-client-c/configure.ac ; cd zookeeper-client/zookeeper-client-c ; ./configure
+	make -C zookeeper-client/zookeeper-client-c clean all
 
 #   Copy libs and binaries
 	mkdir -p yahoo-build/c-client/x86_64-linux-gcc
-	cp src/c/.libs/libzookeeper_st.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
-	cp src/c/.libs/libzookeeper_mt.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
-	cp src/c/.libs/cli_mt yahoo-build/c-client/x86_64-linux-gcc/
-	cp src/c/.libs/cli_st yahoo-build/c-client/x86_64-linux-gcc/
+	cp zookeeper-client/zookeeper-client-c/.libs/libzookeeper_st.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
+	cp zookeeper-client/zookeeper-client-c/.libs/libzookeeper_mt.so*.*.* yahoo-build/c-client/x86_64-linux-gcc/
+	cp zookeeper-client/zookeeper-client-c/.libs/cli_mt yahoo-build/c-client/x86_64-linux-gcc/
+	cp zookeeper-client/zookeeper-client-c/.libs/cli_st yahoo-build/c-client/x86_64-linux-gcc/
 
 #	Copy headers
 	mkdir -p yahoo-build/c-client/include/hashtable
-	cp src/c/src/*.h yahoo-build/c-client/include
-	cp src/c/include/*.h yahoo-build/c-client/include
-	cp src/c/src/hashtable/*.h yahoo-build/c-client/include/hashtable
-	cp src/c/generated/*.h yahoo-build/c-client/include
-	cp src/c/config.h yahoo-build/c-client/include
+	cp zookeeper-client/zookeeper-client-c/src/*.h yahoo-build/c-client/include
+	cp zookeeper-client/zookeeper-client-c/include/*.h yahoo-build/c-client/include
+	cp zookeeper-client/zookeeper-client-c/src/hashtable/*.h yahoo-build/c-client/include/hashtable
+	cp zookeeper-client/zookeeper-client-c/generated/*.h yahoo-build/c-client/include
+	cp zookeeper-client/zookeeper-client-c/config.h yahoo-build/c-client/include
 
 #	Build packages
 	make -C yahoo-build/c-client/

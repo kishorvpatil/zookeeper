@@ -1,6 +1,8 @@
 jobs:
   pull-request:
     requires: [~pr]
+    environment:
+      ZOOKEEPER_DIST_OS: rhel-7.x
     steps:
       - print_env: set
       - build: gmake ${SD_SETTING_MAKE_ARGS} platforms
