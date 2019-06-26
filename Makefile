@@ -37,12 +37,9 @@ build: VERSION
 	ls -lrt /usr/share/aclocal/
 	ls -lrt /etc/
 	ant -Djavac.args=\"-Xlint\" -Dcppunit.m4=/usr/share/aclocal -Dcppunit.lib=/home/y/lib64 -Dtest.junit.output.format=xml -Dversion=`cat BASE_VERSION` clean tar ; if [ $$? -eq 0 ] ; then $(MAKE) copy_test_files ; else $(MAKE) copy_test_files; false ; fi
-	ls -lrt build/zookeeper-`cat BASE_VERSION`
-	ls -lrt build
-	find build/
-
 
 package-release:
+	find build
 	yinst_create --buildtype release --platform ${ZOOKEEPER_DIST_OS} ${PACKAGE_CONFIG_FILES} --target yahoo-build
 	cp yahoo-build/zookeeper*.tgz ${SD_ARTIFACTS_DIR}/
 	meta set "${ZOOKEEPER_DIST_OS}".build_id "${SD_BUILD_ID}"
