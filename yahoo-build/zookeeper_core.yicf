@@ -23,8 +23,8 @@ file 444 - - lib64/zookeeper/$(BASE_VERSION)/README.md  build/zookeeper-$(BASE_V
 
 find 755 - - lib64/zookeeper/$(BASE_VERSION)/bin/      build/zookeeper-$(BASE_VERSION)/bin/ -type f
 find   - - - lib64/zookeeper/$(BASE_VERSION)/lib/      build/zookeeper-$(BASE_VERSION)/lib/ -type f
-find   - - - lib64/zookeeper/$(BASE_VERSION)/contrib/  build/zookeeper-$(BASE_VERSION)/contrib/ -type f
-find   - - - lib64/zookeeper/$(BASE_VERSION)/recipes/  build/zookeeper-$(BASE_VERSION)/recipes/ -type f
+find   - - - lib64/zookeeper/$(BASE_VERSION)/contrib/  build/zookeeper-contrib/ -type f
+find   - - - lib64/zookeeper/$(BASE_VERSION)/recipes/  build/recipes/ -type f
 file   - - - lib64/zookeeper/$(BASE_VERSION)/zookeeper-$(BASE_VERSION).jar build/zookeeper-$(BASE_VERSION)/zookeeper-$(BASE_VERSION).jar
 find   - - - lib64/zookeeper/$(BASE_VERSION)/conf/      build/zookeeper-$(BASE_VERSION)/conf/ -type f
 
