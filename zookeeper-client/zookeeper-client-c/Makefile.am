@@ -4,6 +4,8 @@ include $(top_srcdir)/aminclude.am
 if SOLARIS
   SOLARIS_CPPFLAGS = -D_POSIX_PTHREAD_SEMANTICS
   SOLARIS_LIB_LDFLAGS = -lnsl -lsocket
+else
+  SOLARIS_LIB_LDFLAGS = -rpath /home/y/lib64
 endif
 AM_CPPFLAGS = -I${srcdir}/include -I${srcdir}/tests -I${srcdir}/generated $(SOLARIS_CPPFLAGS)
 AM_CFLAGS = -Wall -Werror -Wdeclaration-after-statement
@@ -15,7 +17,7 @@ if ENABLEGCOV
   AM_LDFLAGS = -lgcov
 endif
 
-LIB_LDFLAGS = -no-undefined -version-info 2 $(SOLARIS_LIB_LDFLAGS)
+LIB_LDFLAGS = -no-undefined -version-info 2 $(SOLARIS_LIB_LDFLAGS) 
 
 pkginclude_HEADERS = include/zookeeper.h include/zookeeper_version.h include/zookeeper_log.h include/proto.h include/recordio.h generated/zookeeper.jute.h
 EXTRA_DIST=LICENSE
