@@ -8,16 +8,6 @@ jobs:
       - build: gmake ${SD_SETTING_MAKE_ARGS} platforms
       - package: gmake ${SD_SETTING_MAKE_ARGS} package-release
 
-  rhel6_build:
-    requires: [~commit]
-    image: docker-registry.ops.yahoo.com:4443/storm/storm-ci-docker-image-rhel-6.10.3:latest
-    environment:
-      ZOOKEEPER_DIST_OS: rhel-6.x
-    steps:
-      - print_env: set
-      - build: gmake ${SD_SETTING_MAKE_ARGS} platforms
-      - package: gmake ${SD_SETTING_MAKE_ARGS} package-release
-
   rhel7_build:
     requires: [~commit]
     environment:
@@ -28,7 +18,7 @@ jobs:
       - package: gmake ${SD_SETTING_MAKE_ARGS} package-release
 
   publish:
-    requires: [rhel6_build, rhel7_build]
+    requires: [rhel7_build]
     steps:
       - dist_force_push: gmake dist_force_push
       - git_tag: gmake git_tag
