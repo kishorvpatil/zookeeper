@@ -51,7 +51,7 @@ clean::
 	rm -f C_CLIENT_VERSION
 	rm -f GIT_TAG
 
-# push zookeeper_core + zookeeper_c_client packages to rhel6 and rhel7
+# push zookeeper_core + zookeeper_c_client packages to rhel7
 dist_force_push:
 	./yahoo-build/fetch_and_push_build_artifacts.py
 
