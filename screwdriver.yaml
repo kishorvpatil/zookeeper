@@ -20,6 +20,7 @@ jobs:
   publish:
     requires: [rhel7_build]
     steps:
+      - prep: gmake VERSION
       - dist_force_push: gmake dist_force_push
       - git_tag: gmake git_tag
 
