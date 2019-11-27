@@ -144,7 +144,7 @@ xmlns:cs="antlib:com.puppycrawl.tools.checkstyle.ant">
     <property name="test.junit.haltonfailure" value="no" />
     <property name="test.junit.failbuild.ontestfailure" value="true" />
     <property name="test.junit.maxmem" value="512m" />
-    <property name="test.quick" value="no" />
+    <property name="test.quick" value="yes" />
     <property name="conf.dir" value="${basedir}/conf"/>
     <property name="docs.dir" value="${basedir}/docs"/>
     <property name="docs.src" value="${basedir}/zookeeper-docs"/>
