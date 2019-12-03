@@ -21,6 +21,7 @@ jobs:
     requires: [rhel7_build]
     steps:
       - dist_force_push: gmake dist_force_push
+      - version: gmake VERSION
       - git_tag: gmake git_tag
 
 
