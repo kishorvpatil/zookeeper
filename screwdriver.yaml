@@ -25,7 +25,7 @@ jobs:
 
 
 shared:
-  image: docker-registry.ops.yahoo.com:4443/storm/storm-ci-docker-image-rhel-7.5.4:latest
+  image: docker-registry.ops.yahoo.com:4443/storm/storm-ci-docker-image-rhel-7.6.6:latest
   annotations:
     screwdriver.cd/cpu: HIGH
     screwdriver.cd/ram: HIGH

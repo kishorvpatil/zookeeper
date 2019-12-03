@@ -55,7 +55,7 @@ clean::
 dist_force_push:
 	./yahoo-build/fetch_and_push_build_artifacts.py
 
-git_tag:
+git_tag: VERSION
 	git tag -f -a `cat GIT_TAG` -m "Adding tag for `cat GIT_TAG`"
 	git push origin `cat GIT_TAG`
 	@echo "Build Description: `cat GIT_TAG`"
