@@ -4,6 +4,8 @@ include $(top_srcdir)/aminclude.am
 if SOLARIS
   SOLARIS_CPPFLAGS = -D_POSIX_PTHREAD_SEMANTICS
   SOLARIS_LIB_LDFLAGS = -lnsl -lsocket
+else
+  SOLARIS_LIB_LDFLAGS = -rpath /home/y/lib64
 endif
 AM_CPPFLAGS = -I${srcdir}/include -I${srcdir}/tests -I${srcdir}/generated $(SOLARIS_CPPFLAGS)
 AM_CFLAGS = -Wall -Werror -Wdeclaration-after-statement
